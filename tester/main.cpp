@@ -11,8 +11,8 @@
 struct struExample {
     uint32_t _id;
     std::string _str;
-    int32_t _i;
-    int64_t _num;
+    float _i;
+    double _num;
 
     template<typename T>
     void serialize(T& t) {
@@ -35,30 +35,30 @@ void serialize(T& t, struExamples& items) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc > 1)
-    {
-        std::ifstream file;
-        file.open(argv[1], std::ios::in | std::ios::binary);
-        assert(file.is_open());
-        file.seekg(0, file.end);
-        int length = file.tellg();
-        file.seekg(0, file.beg);
-        char* szBuffer = new char[length];
-        file.read(szBuffer, length);
-        file.close();
+    //if (argc > 1)
+    //{
+    //    std::ifstream file;
+    //    file.open(argv[1], std::ios::in | std::ios::binary);
+    //    assert(file.is_open());
+    //    file.seekg(0, file.end);
+    //    int length = file.tellg();
+    //    file.seekg(0, file.beg);
+    //    char* szBuffer = new char[length];
+    //    file.read(szBuffer, length);
+    //    file.close();
 
-        struExamples items;
-        serialization::PBDecoder decoder(szBuffer, length);
-        decoder >> items;
-        delete[] szBuffer;
-    }
+    //    struExamples items;
+    //    serialization::PBDecoder decoder(szBuffer, length);
+    //    decoder >> items;
+    //    delete[] szBuffer;
+    //}
 
     {
         struExample item;
         item._id = 1;
         item._str = "example";
-        item._i = 2;
-        item._num = 9;
+        item._i = 2.5;
+        item._num = 9.5;
         struExamples items;
         items._v.push_back(item);
         items._v.push_back(item);

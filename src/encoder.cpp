@@ -21,7 +21,7 @@ namespace serialization {
     }
 
     void PBEncoder::encodeValue(const float& v) {
-        uint64_t val = (uint64_t)v;
+        uint32_t val = *(uint32_t*)&v;
         char bytes[4] = { 0 };
         bytes[0] = (char)(val & 0xFF);
         bytes[1] = (char)((val >> 8) & 0xFF);
@@ -31,7 +31,7 @@ namespace serialization {
     }
 
     void PBEncoder::encodeValue(const double& v) {
-        uint64_t val = (uint64_t)v;
+        uint64_t val = *(uint64_t*)&v;
         char bytes[8] = { 0 };
         bytes[0] = (char)(val & 0xFF);
         bytes[1] = (char)((val >> 8) & 0xFF);
