@@ -52,7 +52,7 @@ namespace serialization {
 
         template<typename T>
         const PBDecoder& operator&(serializePair<std::vector<T> > pair) const {
-            for (; hasData());) {
+            for (; hasData();) {
                 uint32_t cur = _cur;
                 uint32_t temp = tagWriteType();
                 if (pair.tag() == tag(temp) && WT_LENGTH_DELIMITED == writeType(temp)) {
