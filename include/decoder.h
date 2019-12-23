@@ -37,7 +37,7 @@ namespace serialization {
         }
 
         template<typename T>
-        const PBDecoder& operator&(serializePair<T>& pair) const {
+        const PBDecoder& operator&(serializePair<T> pair) const {
             if (!isMessage<T>::YES) {
                 return decodeValue(pair);
             }
@@ -51,18 +51,18 @@ namespace serialization {
         }
 
         template<typename T>
-        const PBDecoder& operator&(serializePair<std::vector<T> >& pair) const {
-            for (bool bBreak = false; (bBreak || hasData());) {
+        const PBDecoder& operator&(serializePair<std::vector<T> > pair) const {
+            for (; hasData());) {
                 uint32_t cur = _cur;
                 uint32_t temp = tagWriteType();
                 if (pair.tag() == tag(temp) && WT_LENGTH_DELIMITED == writeType(temp)) {
-                    uint64_t length = value();
+                    assert(value());
                     T item = T();
                     valueDecoder<isMessage<T>::YES>::decode(item, *this);
                     pair.value().push_back(item);
                 } else {
                     _cur = cur;
-                    bBreak = true;
+                    break;
                 }
             }
             return *this;

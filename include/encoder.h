@@ -44,7 +44,7 @@ namespace serialization {
 
         template<typename T>
         PBEncoder& operator<<(const T& value) {
-            typename T* pValue = const_cast<T*>(&value);
+            T* pValue = const_cast<T*>(&value);
             serializeWrapper(*this, *pValue);
             return *this;
         }
