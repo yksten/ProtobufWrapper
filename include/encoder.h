@@ -54,7 +54,7 @@ namespace serialization {
             if (!isMessage<T>::YES) {
                 uint64_t tag = ((uint64_t)pair.tag() << 3) | isMessage<T>::WRITE_TYPE;
                 value(tag);
-                return encodeValue(pair);
+                return encodeValue(pair.value());
             }
             uint64_t tag = ((uint64_t)pair.tag() << 3) | WT_LENGTH_DELIMITED;
             value(tag);
@@ -83,18 +83,12 @@ namespace serialization {
             return *this;
         }
     private:
+        PBEncoder& encodeValue(const std::string& v);
+        PBEncoder& encodeValue(const float& v);
+        PBEncoder& encodeValue(const double& v);
         template<typename T>
-        void encodeValue(const T& v) {
+        PBEncoder& encodeValue(const T& v) {
             value(v);
-        }
-
-        void encodeValue(const std::string& v);
-        void encodeValue(const float& v);
-        void encodeValue(const double& v);
-
-        template<typename T>
-        PBEncoder& encodeValue(const serializePair<T>& pair) {
-            encodeValue(pair.value());
             return *this;
         }
         void value(uint64_t value);

@@ -22,7 +22,7 @@ namespace serialization {
         struct valueDecoder<0> {
             template <typename OUT>
             static void decode(OUT& out, const PBDecoder& decoder) {
-                out = static_cast<OUT>(decoder.value());
+                decoder.decodeValue(out);
             }
         };
         friend struct valueDecoder<0>;
@@ -39,7 +39,10 @@ namespace serialization {
         template<typename T>
         const PBDecoder& operator&(serializePair<T> pair) const {
             if (!isMessage<T>::YES) {
-                return decodeValue(pair);
+                uint32_t temp = tagWriteType();
+                assert(pair.tag() == tag(temp));
+                assert(isMessage<T>::WRITE_TYPE == writeType(temp));
+                return decodeValue(pair.value());
             }
             uint32_t temp = tagWriteType();
             assert(pair.tag() == tag(temp));
@@ -47,7 +50,8 @@ namespace serialization {
             uint64_t length = value();
             assert(_cur + length <= _size);
             _cur += length;
-            return operator&(pair);
+            valueDecoder<isMessage<T>::YES>::decode(pair.value(), *this);
+            return *this;
         }
 
         template<typename T>
@@ -68,15 +72,12 @@ namespace serialization {
             return *this;
         }
     private:
-        const PBDecoder& decodeValue(serializePair<std::string>& pair) const;
-        const PBDecoder& decodeValue(serializePair<float>& pair) const;
-        const PBDecoder& decodeValue(serializePair<double>& pair) const;
+        const PBDecoder& decodeValue(std::string& v) const;
+        const PBDecoder& decodeValue(float& v) const;
+        const PBDecoder& decodeValue(double& v) const;
         template<typename T>
-        const PBDecoder& decodeValue(serializePair<T>& pair) const {
-            uint32_t temp = tagWriteType();
-            assert(pair.tag() == tag(temp));
-            assert(WT_VARINT == writeType(temp));
-            pair.value() = static_cast<T>(value());
+        const PBDecoder& decodeValue(T& v) const {
+            v = static_cast<T>(value());
             return *this;
         }
         char readByte()const;

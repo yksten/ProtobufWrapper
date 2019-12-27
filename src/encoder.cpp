@@ -15,12 +15,13 @@ namespace serialization {
         return _str.size();
     }
 
-    void PBEncoder::encodeValue(const std::string& v) {
+    PBEncoder& PBEncoder::encodeValue(const std::string& v) {
         value(v.length());
         _str.append(v);
+        return *this;
     }
 
-    void PBEncoder::encodeValue(const float& v) {
+    PBEncoder& PBEncoder::encodeValue(const float& v) {
         union { float f; uint32_t i; };
         f = v;
         uint8_t bytes[4] = { 0 };
@@ -29,9 +30,10 @@ namespace serialization {
         bytes[2] = (uint8_t)((i >> 16) & 0xFF);
         bytes[3] = (uint8_t)((i >> 24) & 0xFF);
         _str.append((const char*)bytes, 4);
+        return *this;
     }
 
-    void PBEncoder::encodeValue(const double& v) {
+    PBEncoder& PBEncoder::encodeValue(const double& v) {
         union { double db; uint64_t i; };
         db = v;
         uint8_t bytes[8] = { 0 };
@@ -44,6 +46,7 @@ namespace serialization {
         bytes[6] = (uint8_t)((i >> 48) & 0xFF);
         bytes[7] = (uint8_t)((i >> 56) & 0xFF);
         _str.append((const char*)bytes, 8);
+        return *this;
     }
 
     void PBEncoder::value(uint64_t value) {

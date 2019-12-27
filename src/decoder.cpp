@@ -9,41 +9,32 @@ namespace serialization {
         assert(_cur == _size);
     }
 
-    const PBDecoder& PBDecoder::decodeValue(serializePair<std::string>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_LENGTH_DELIMITED == writeType(temp));
+    const PBDecoder& PBDecoder::decodeValue(std::string& v) const {
         uint64_t length = value();
         assert(_cur + length <= _size);
-        pair.value().append(_szBuf + _cur, length);
+        v.append(_szBuf + _cur, length);
         _cur += length;
         return *this;
     }
 
-    const PBDecoder& PBDecoder::decodeValue(serializePair<float>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_32BIT == writeType(temp));
+    const PBDecoder& PBDecoder::decodeValue(float& v) const {
         assert(_cur + 4 <= _size);
         uint8_t szTemp[4] = { 0 };
         memcpy(szTemp, _szBuf + _cur, 4);
         union { float f; uint32_t i; };
         i = ((uint32_t)szTemp[0] << 0) | ((uint32_t)szTemp[1] << 8) | ((uint32_t)szTemp[2] << 16) | ((uint32_t)szTemp[3] << 24);
-        pair.value() = f;
+        v = f;
         _cur += 4;
         return *this;
     }
 
-    const PBDecoder& PBDecoder::decodeValue(serializePair<double>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_64BIT == writeType(temp));
+    const PBDecoder& PBDecoder::decodeValue(double& v) const {
         assert(_cur + 8 <= _size);
         uint8_t szTemp[8] = { 0 };
         memcpy(szTemp, _szBuf + _cur, 8);
         union { double db; uint64_t i; };
         i = ((uint64_t)szTemp[0] << 0) | ((uint64_t)szTemp[1] << 8) | ((uint64_t)szTemp[2] << 16) | ((uint64_t)szTemp[3] << 24) | ((uint64_t)szTemp[4] << 32) | ((uint64_t)szTemp[5] << 40) | ((uint64_t)szTemp[6] << 48) | ((uint64_t)szTemp[7] << 56);
-        pair.value() = db;
+        v = db;
         _cur += 8;
         return *this;
     }
