@@ -1,5 +1,4 @@
 #include "encoder.h"
-#include <assert.h>
 
 namespace serialization {
     PBEncoder::writeValue const PBEncoder::functionArray[] = { &PBEncoder::varInt, &PBEncoder::svarInt, &PBEncoder::fixed32, &PBEncoder::fixed64, };
@@ -24,7 +23,6 @@ namespace serialization {
     }
 
     PBEncoder& PBEncoder::encodeValue(const float& v, int32_t type) {
-        assert(FN_FIXED32 == type);
         union { float f; uint32_t i; };
         f = v;
         uint8_t bytes[4] = { 0 };
@@ -37,7 +35,6 @@ namespace serialization {
     }
 
     PBEncoder& PBEncoder::encodeValue(const double& v, int32_t type) {
-        assert(FN_FIXED64 == type);
         union { double db; uint64_t i; };
         db = v;
         uint8_t bytes[8] = { 0 };

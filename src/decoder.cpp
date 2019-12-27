@@ -19,7 +19,6 @@ namespace serialization {
     }
 
     const PBDecoder& PBDecoder::decodeValue(float& v, int32_t type) const {
-        assert(FN_FIXED32 == type);
         assert(_cur + 4 <= _size);
         uint8_t szTemp[4] = { 0 };
         memcpy(szTemp, _szBuf + _cur, 4);
@@ -31,7 +30,6 @@ namespace serialization {
     }
 
     const PBDecoder& PBDecoder::decodeValue(double& v, int32_t type) const {
-        assert(FN_FIXED64 == type);
         assert(_cur + 8 <= _size);
         uint8_t szTemp[8] = { 0 };
         memcpy(szTemp, _szBuf + _cur, 8);

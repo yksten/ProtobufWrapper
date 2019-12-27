@@ -58,6 +58,9 @@ namespace serialization {
 
         template<typename T>
         const PBDecoder& operator&(serializePair<std::vector<T> > pair) const {
+            if (pair.tag() == PACK) {
+                return decodeRepaetedPack(pair);
+            }
             for (; hasData();) {
                 uint32_t cur = _cur;
                 uint32_t temp = tagWriteType();
@@ -74,6 +77,21 @@ namespace serialization {
             return *this;
         }
     private:
+        template<typename T>
+        const PBDecoder& decodeRepaetedPack(serializePair<std::vector<T> >& pair) const {
+            uint32_t temp = tagWriteType();
+            assert(pair.tag() == tag(temp));
+            assert(WT_LENGTH_DELIMITED == writeType(temp));
+            uint32_t cur = _cur;
+            uint64_t size = varInt();
+            for (; _cur - cur < size;) {
+                T item = T();
+                valueDecoder<isMessage<T>::YES>::decode(item, pair.type(), *this);
+                pair.value().push_back(item);
+            }
+            assert((_cur - cur) == size);
+            return *this;
+        }
         const PBDecoder& decodeValue(std::string& v, int32_t type) const;
         const PBDecoder& decodeValue(float& v, int32_t type) const;
         const PBDecoder& decodeValue(double& v, int32_t type) const;

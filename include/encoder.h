@@ -71,20 +71,52 @@ namespace serialization {
 
         template<typename T>
         PBEncoder& operator&(const serializePair<std::vector<T> >& pair) {
+            if (pair.tag() == PACK) {
+                return encodeRepaetedPack(pair);
+            }
+
             uint64_t tag = ((uint64_t)pair.tag() << 3) | WT_LENGTH_DELIMITED;
             uint32_t size = pair.value().size();
             for (uint32_t i = 0; i < size; ++i) {
                 varInt(tag);
-                std::string strTemp;
-                strTemp.swap(_str);
-                valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
-                _str.swap(strTemp);
-                varInt(strTemp.length());
-                _str.append(strTemp);
+                if (isMessage<T>::YES) {
+                    std::string strTemp;
+                    strTemp.swap(_str);
+                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
+                    _str.swap(strTemp);
+                    varInt(strTemp.length());
+                    _str.append(strTemp);
+                } else {
+                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
+                }
             }
             return *this;
         }
     private:
+        template<typename T>
+        PBEncoder& encodeRepaetedPack(const serializePair<std::vector<T> >& pair) {
+            uint64_t tag = ((uint64_t)pair.tag() << 3) | WT_LENGTH_DELIMITED;
+            varInt(tag);
+            std::string strTemp;
+            strTemp.swap(_str);
+            uint32_t size = pair.value().size();
+            for (uint32_t i = 0; i < size; ++i) {
+                if (isMessage<T>::YES) {
+                    std::string strItem;
+                    strItem.swap(_str);
+                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
+                    _str.swap(strItem);
+                    varInt(strItem.length());
+                    _str.append(strItem);
+                } else {
+                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
+                }
+            }
+            _str.swap(strTemp);
+            varInt(strTemp.length());
+            _str.append(strTemp);
+            return *this;
+        }
         PBEncoder& encodeValue(const std::string& v, int32_t type);
         PBEncoder& encodeValue(const float& v, int32_t type);
         PBEncoder& encodeValue(const double& v, int32_t type);

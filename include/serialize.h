@@ -18,6 +18,7 @@ namespace serialization {
         FN_FIXED32 = 2,    //fixed32,sfixed32
         FN_FIXED64 = 3,    //fixed64,sfixed64
         FN_MAX        ,
+        PACK          ,    //repaeted [pack=true]
     };
 
     template <typename T>
