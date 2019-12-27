@@ -1,6 +1,7 @@
 #include "decoder.h"
 
 namespace serialization {
+    PBDecoder::readValue const PBDecoder::functionArray[] = { &PBDecoder::varInt, &PBDecoder::svarInt, &PBDecoder::fixed32, &PBDecoder::fixed64, };
     PBDecoder::PBDecoder(const char* sz, unsigned int size)
         :_szBuf(sz), _size(size), _cur(0) {
     }
@@ -9,15 +10,16 @@ namespace serialization {
         assert(_cur == _size);
     }
 
-    const PBDecoder& PBDecoder::decodeValue(std::string& v) const {
-        uint64_t length = value();
+    const PBDecoder& PBDecoder::decodeValue(std::string& v, int32_t type) const {
+        uint64_t length = varInt();
         assert(_cur + length <= _size);
         v.append(_szBuf + _cur, length);
         _cur += length;
         return *this;
     }
 
-    const PBDecoder& PBDecoder::decodeValue(float& v) const {
+    const PBDecoder& PBDecoder::decodeValue(float& v, int32_t type) const {
+        assert(FN_FIXED32 == type);
         assert(_cur + 4 <= _size);
         uint8_t szTemp[4] = { 0 };
         memcpy(szTemp, _szBuf + _cur, 4);
@@ -28,7 +30,8 @@ namespace serialization {
         return *this;
     }
 
-    const PBDecoder& PBDecoder::decodeValue(double& v) const {
+    const PBDecoder& PBDecoder::decodeValue(double& v, int32_t type) const {
+        assert(FN_FIXED64 == type);
         assert(_cur + 8 <= _size);
         uint8_t szTemp[8] = { 0 };
         memcpy(szTemp, _szBuf + _cur, 8);
@@ -69,7 +72,11 @@ namespace serialization {
         return result;
     }
 
-    uint64_t PBDecoder::value()const {
+    uint64_t PBDecoder::value(int32_t type)const {
+        return (this->*functionArray[type])();
+    }
+
+    uint64_t PBDecoder::varInt()const {
         assert(_cur <= _size);
         char byte = readByte();
         uint64_t result = byte;
@@ -81,5 +88,31 @@ namespace serialization {
             result |= (uint64_t)(byte & 0x7F) << bitpos;
         }
         return result;
+    }
+
+    uint64_t PBDecoder::svarInt()const {
+        uint64_t value = varInt();
+        if (value & 1) {
+            return (uint64_t)(~(value >> 1));
+        }
+        return (uint64_t)(value >> 1);
+    }
+
+    uint64_t PBDecoder::fixed32()const {
+        assert(_cur + 4 <= _size);
+        uint8_t szTemp[4] = { 0 };
+        memcpy(szTemp, _szBuf + _cur, 4);
+        uint32_t i = ((uint32_t)szTemp[0] << 0) | ((uint32_t)szTemp[1] << 8) | ((uint32_t)szTemp[2] << 16) | ((uint32_t)szTemp[3] << 24);
+        _cur += 4;
+        return i;
+    }
+
+    uint64_t PBDecoder::fixed64()const {
+        assert(_cur + 8 <= _size);
+        uint8_t szTemp[8] = { 0 };
+        memcpy(szTemp, _szBuf + _cur, 8);
+        uint64_t i = ((uint64_t)szTemp[0] << 0) | ((uint64_t)szTemp[1] << 8) | ((uint64_t)szTemp[2] << 16) | ((uint64_t)szTemp[3] << 24) | ((uint64_t)szTemp[4] << 32) | ((uint64_t)szTemp[5] << 40) | ((uint64_t)szTemp[6] << 48) | ((uint64_t)szTemp[7] << 56);
+        _cur += 8;
+        return i;
     }
 }

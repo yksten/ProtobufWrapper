@@ -4,12 +4,20 @@
 
 namespace serialization {
     enum {
-        WT_VARINT             = 0, //int32,int64,uint32,uint64,sint32,sin64,bool,enum
-        WT_64BIT              = 1, //fixed64,sfixed64,double
-        WT_LENGTH_DELIMITED   = 2, //string,bytes,embedded messages,packed repeated fields
-        WT_START_GROUP        = 3, 
-        WT_END_GROUP          = 4, 
-        WT_32BIT              = 5, //fixed32,sfixed32,float
+        WT_VARINT             = 0,    //int32,int64,uint32,uint64,sint32,sin64,bool,enum
+        WT_64BIT              = 1,    //fixed64,sfixed64,double
+        WT_LENGTH_DELIMITED   = 2,    //string,bytes,embedded messages,packed repeated fields
+        WT_START_GROUP        = 3,    //Groups(deprecated)
+        WT_END_GROUP          = 4,    //Groups(deprecated)
+        WT_32BIT              = 5,    //fixed32,sfixed32,float
+    };
+
+    enum {
+        FN_VARINT  = 0,    //int32,int64,uint32,uint64,bool,enum
+        FN_SVARINT = 1,    //sint32,sin64
+        FN_FIXED32 = 2,    //fixed32,sfixed32
+        FN_FIXED64 = 3,    //fixed64,sfixed64
+        FN_MAX        ,
     };
 
     template <typename T>
@@ -59,13 +67,14 @@ namespace serialization {
 
     template<typename VALUE>
     class serializePair {
-        bool _pack;
+        const uint32_t _type;
         const uint32_t _tag;
         VALUE& _value;
     public:
-        serializePair(uint32_t tag, VALUE& value) :_pack(false), _tag(tag), _value(value) {}
-        serializePair(uint32_t tag, VALUE& value, bool pack) :_pack(pack), _tag(tag), _value(value) {}
+        serializePair(uint32_t tag, VALUE& value) :_type(FN_VARINT), _tag(tag), _value(value) {}
+        serializePair(uint32_t tag, VALUE& value, uint32_t type) :_type(type), _tag(tag), _value(value) {}
 
+        uint32_t type() const { return _type; }
         uint32_t tag() const { return _tag; }
         VALUE& value() { return _value; }
         const VALUE& value() const { return _value; }
@@ -76,10 +85,10 @@ namespace serialization {
         return serializePair<VALUE>(tag, value);
     }
 
-    //template<typename VALUE>
-    //inline serializePair<VALUE> makePair(uint32_t tag, VALUE& value, bool pack) {
-    //    return serializePair<VALUE>(tag, value, pack);
-    //}
+    template<typename VALUE>
+    inline serializePair<VALUE> makePair(uint32_t tag, VALUE& value, int32_t type) {
+        return serializePair<VALUE>(tag, value, type);
+    }
 }
 
 

@@ -1,6 +1,8 @@
 #include "encoder.h"
+#include <assert.h>
 
 namespace serialization {
+    PBEncoder::writeValue const PBEncoder::functionArray[] = { &PBEncoder::varInt, &PBEncoder::svarInt, &PBEncoder::fixed32, &PBEncoder::fixed64, };
     PBEncoder::PBEncoder() {
     }
 
@@ -15,13 +17,14 @@ namespace serialization {
         return _str.size();
     }
 
-    PBEncoder& PBEncoder::encodeValue(const std::string& v) {
-        value(v.length());
+    PBEncoder& PBEncoder::encodeValue(const std::string& v, int32_t type) {
+        varInt(v.length());
         _str.append(v);
         return *this;
     }
 
-    PBEncoder& PBEncoder::encodeValue(const float& v) {
+    PBEncoder& PBEncoder::encodeValue(const float& v, int32_t type) {
+        assert(FN_FIXED32 == type);
         union { float f; uint32_t i; };
         f = v;
         uint8_t bytes[4] = { 0 };
@@ -33,7 +36,8 @@ namespace serialization {
         return *this;
     }
 
-    PBEncoder& PBEncoder::encodeValue(const double& v) {
+    PBEncoder& PBEncoder::encodeValue(const double& v, int32_t type) {
+        assert(FN_FIXED64 == type);
         union { double db; uint64_t i; };
         db = v;
         uint8_t bytes[8] = { 0 };
@@ -49,13 +53,41 @@ namespace serialization {
         return *this;
     }
 
-    void PBEncoder::value(uint64_t value) {
+    void PBEncoder::value(uint64_t value, int32_t type) {
+        (this->*functionArray[type])(value);
+    }
+
+    void PBEncoder::varInt(uint64_t value) {
         if (value <= 0x7F) {
             char byte = (char)value;
             _str.append(1, byte);
         } else {
             encodeVarint32((uint32_t)value, (uint32_t)(value >> 32));
         }
+    }
+
+    void PBEncoder::svarInt(uint64_t value) {
+        uint64_t zigzagged;
+        if (value < 0)
+            zigzagged = ~((uint64_t)value << 1);
+        else
+            zigzagged = (uint64_t)value << 1;
+        varInt(zigzagged);
+    }
+
+    void PBEncoder::fixed32(uint64_t value) {
+        uint32_t val = static_cast<uint32_t>(value);
+        uint8_t bytes[4] = { (uint8_t)(val & 0xFF), (uint8_t)((val >> 8) & 0xFF),
+            (uint8_t)((val >> 16) & 0xFF), (uint8_t)((val >> 24) & 0xFF) };
+        _str.append((const char*)bytes, 4);
+    }
+
+    void PBEncoder::fixed64(uint64_t value) {
+        uint8_t bytes[8] = { (uint8_t)(value & 0xFF), (uint8_t)((value >> 8) & 0xFF),
+            (uint8_t)((value >> 16) & 0xFF), (uint8_t)((value >> 24) & 0xFF),
+            (uint8_t)((value >> 32) & 0xFF), (uint8_t)((value >> 40) & 0xFF),
+            (uint8_t)((value >> 48) & 0xFF), (uint8_t)((value >> 56) & 0xFF) };
+        _str.append((const char*)bytes, 8);
     }
 
     void PBEncoder::encodeVarint32(uint32_t low, uint32_t high) {

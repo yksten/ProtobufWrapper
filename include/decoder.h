@@ -7,6 +7,8 @@
 
 namespace serialization {
     class PBDecoder {
+        typedef uint64_t(PBDecoder::*readValue)()const;
+        static readValue const functionArray[FN_MAX];
         const char* _szBuf;
         const uint32_t _size;
         mutable uint32_t _cur;
@@ -14,15 +16,15 @@ namespace serialization {
         template <int isStruct>
         struct valueDecoder {
             template <typename OUT>
-            static void decode(OUT& out, const PBDecoder& decoder) {
+            static void decode(OUT& out, int32_t typ, const PBDecoder& decoder) {
                 decoder.operator>>(out);
             }
         };
         template <>
         struct valueDecoder<0> {
             template <typename OUT>
-            static void decode(OUT& out, const PBDecoder& decoder) {
-                decoder.decodeValue(out);
+            static void decode(OUT& out, int32_t type, const PBDecoder& decoder) {
+                decoder.decodeValue(out, type);
             }
         };
         friend struct valueDecoder<0>;
@@ -42,15 +44,15 @@ namespace serialization {
                 uint32_t temp = tagWriteType();
                 assert(pair.tag() == tag(temp));
                 assert(isMessage<T>::WRITE_TYPE == writeType(temp));
-                return decodeValue(pair.value());
+                return decodeValue(pair.value(), pair.tag());
             }
             uint32_t temp = tagWriteType();
             assert(pair.tag() == tag(temp));
             assert(WT_LENGTH_DELIMITED == writeType(temp));
-            uint64_t length = value();
+            uint64_t length = varInt();
             assert(_cur + length <= _size);
             _cur += length;
-            valueDecoder<isMessage<T>::YES>::decode(pair.value(), *this);
+            valueDecoder<isMessage<T>::YES>::decode(pair.value(), pair.tag(), *this);
             return *this;
         }
 
@@ -60,9 +62,9 @@ namespace serialization {
                 uint32_t cur = _cur;
                 uint32_t temp = tagWriteType();
                 if (pair.tag() == tag(temp) && WT_LENGTH_DELIMITED == writeType(temp)) {
-                    assert(value());
+                    assert(varInt());
                     T item = T();
-                    valueDecoder<isMessage<T>::YES>::decode(item, *this);
+                    valueDecoder<isMessage<T>::YES>::decode(item, pair.type(), *this);
                     pair.value().push_back(item);
                 } else {
                     _cur = cur;
@@ -72,17 +74,21 @@ namespace serialization {
             return *this;
         }
     private:
-        const PBDecoder& decodeValue(std::string& v) const;
-        const PBDecoder& decodeValue(float& v) const;
-        const PBDecoder& decodeValue(double& v) const;
+        const PBDecoder& decodeValue(std::string& v, int32_t type) const;
+        const PBDecoder& decodeValue(float& v, int32_t type) const;
+        const PBDecoder& decodeValue(double& v, int32_t type) const;
         template<typename T>
-        const PBDecoder& decodeValue(T& v) const {
-            v = static_cast<T>(value());
+        const PBDecoder& decodeValue(T& v, int32_t type) const {
+            v = static_cast<T>(value(type));
             return *this;
         }
         char readByte()const;
         uint32_t tagWriteType()const;
-        uint64_t value()const;
+        uint64_t value(int32_t type)const;
+        uint64_t varInt()const;
+        uint64_t svarInt()const;
+        uint64_t fixed32()const;
+        uint64_t fixed64()const;
         bool hasData()const { return _cur < _size; }
         uint32_t tag(uint32_t value)const { return (value >> 3); }
         uint32_t writeType(uint32_t value)const { return (value & 7); }
