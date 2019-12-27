@@ -21,21 +21,29 @@ namespace serialization {
     }
 
     void PBEncoder::encodeValue(const float& v) {
-        union {
-            float f;
-            uint32_t i;
-        };
+        union { float f; uint32_t i; };
         f = v;
-        _str.append((const char*)&i, sizeof(uint32_t));
+        uint8_t bytes[4] = { 0 };
+        bytes[0] = (uint8_t)(i & 0xFF);
+        bytes[1] = (uint8_t)((i >> 8) & 0xFF);
+        bytes[2] = (uint8_t)((i >> 16) & 0xFF);
+        bytes[3] = (uint8_t)((i >> 24) & 0xFF);
+        _str.append((const char*)bytes, 4);
     }
 
     void PBEncoder::encodeValue(const double& v) {
-        union {
-            double db;
-            uint64_t i;
-        };
+        union { double db; uint64_t i; };
         db = v;
-        _str.append((const char*)&i, sizeof(uint64_t));
+        uint8_t bytes[8] = { 0 };
+        bytes[0] = (uint8_t)(i & 0xFF);
+        bytes[1] = (uint8_t)((i >> 8) & 0xFF);
+        bytes[2] = (uint8_t)((i >> 16) & 0xFF);
+        bytes[3] = (uint8_t)((i >> 24) & 0xFF);
+        bytes[4] = (uint8_t)((i >> 32) & 0xFF);
+        bytes[5] = (uint8_t)((i >> 40) & 0xFF);
+        bytes[6] = (uint8_t)((i >> 48) & 0xFF);
+        bytes[7] = (uint8_t)((i >> 56) & 0xFF);
+        _str.append((const char*)bytes, 8);
     }
 
     void PBEncoder::value(uint64_t value) {

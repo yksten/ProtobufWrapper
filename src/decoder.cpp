@@ -107,13 +107,10 @@ namespace serialization {
         assert(pair.tag() == tag(temp));
         assert(WT_32BIT == writeType(temp));
         assert(_cur + 4 <= _size);
-        char szTemp[8] = { 0 };
-        memcpy(szTemp, _szBuf + _cur, 8);
-        union {
-            float f;
-            uint32_t i;
-        };
-        memcpy(&i, szTemp, sizeof(uint32_t));
+        uint8_t szTemp[4] = { 0 };
+        memcpy(szTemp, _szBuf + _cur, 4);
+        union { float f; uint32_t i; };
+        i = ((uint32_t)szTemp[0] << 0) | ((uint32_t)szTemp[1] << 8) | ((uint32_t)szTemp[2] << 16) | ((uint32_t)szTemp[3] << 24);
         pair.value() = f;
         _cur += 4;
         return *this;
@@ -125,13 +122,10 @@ namespace serialization {
         assert(pair.tag() == tag(temp));
         assert(WT_64BIT == writeType(temp));
         assert(_cur + 8 <= _size);
-        char szTemp[8] = { 0 };
-        memcpy(szTemp, _szBuf+_cur, 8);
-        union {
-            double db;
-            uint64_t i;
-        };
-        memcpy(&i, szTemp, sizeof(uint64_t));
+        uint8_t szTemp[8] = { 0 };
+        memcpy(szTemp, _szBuf + _cur, 8);
+        union { double db; uint64_t i; };
+        i = ((uint64_t)szTemp[0] << 0) | ((uint64_t)szTemp[1] << 8) | ((uint64_t)szTemp[2] << 16) | ((uint64_t)szTemp[3] << 24) | ((uint64_t)szTemp[4] << 32) | ((uint64_t)szTemp[5] << 40) | ((uint64_t)szTemp[6] << 48) | ((uint64_t)szTemp[7] << 56);
         pair.value() = db;
         _cur += 8;
         return *this;
