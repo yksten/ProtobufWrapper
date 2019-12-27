@@ -9,87 +9,6 @@ namespace serialization {
         assert(_cur == _size);
     }
 
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<bool>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<bool>(value());
-        return *this;
-    }
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<int8_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<int8_t>(value());
-        return *this;
-    }
-
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<uint8_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<uint8_t>(value());
-        return *this;
-    }
-
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<int16_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<int16_t>(value());
-        return *this;
-    }
-
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<uint16_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<uint16_t>(value());
-        return *this;
-    }
-
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<int32_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<int32_t>(value());
-        return *this;
-    }
-
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<uint32_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<uint32_t>(value());
-        return *this;
-    }
-
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<int64_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<int64_t>(value());
-        return *this;
-    }
-
-    template<>
-    const PBDecoder& PBDecoder::decodeValue(serializePair<uint64_t>& pair) const {
-        uint32_t temp = tagWriteType();
-        assert(pair.tag() == tag(temp));
-        assert(WT_VARINT == writeType(temp));
-        pair.value() = static_cast<uint64_t>(value());
-        return *this;
-    }
-
-    template<>
     const PBDecoder& PBDecoder::decodeValue(serializePair<std::string>& pair) const {
         uint32_t temp = tagWriteType();
         assert(pair.tag() == tag(temp));
@@ -101,7 +20,6 @@ namespace serialization {
         return *this;
     }
 
-    template<>
     const PBDecoder& PBDecoder::decodeValue(serializePair<float>& pair) const {
         uint32_t temp = tagWriteType();
         assert(pair.tag() == tag(temp));
@@ -116,7 +34,6 @@ namespace serialization {
         return *this;
     }
 
-    template<>
     const PBDecoder& PBDecoder::decodeValue(serializePair<double>& pair) const {
         uint32_t temp = tagWriteType();
         assert(pair.tag() == tag(temp));

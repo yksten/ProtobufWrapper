@@ -68,8 +68,17 @@ namespace serialization {
             return *this;
         }
     private:
+        const PBDecoder& decodeValue(serializePair<std::string>& pair) const;
+        const PBDecoder& decodeValue(serializePair<float>& pair) const;
+        const PBDecoder& decodeValue(serializePair<double>& pair) const;
         template<typename T>
-        const PBDecoder& decodeValue(serializePair<T>& pair) const;
+        const PBDecoder& decodeValue(serializePair<T>& pair) const {
+            uint32_t temp = tagWriteType();
+            assert(pair.tag() == tag(temp));
+            assert(WT_VARINT == writeType(temp));
+            pair.value() = static_cast<T>(value());
+            return *this;
+        }
         char readByte()const;
         uint32_t tagWriteType()const;
         uint64_t value()const;
