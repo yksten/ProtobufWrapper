@@ -93,7 +93,12 @@ namespace serialization {
 }
 
 
-#define SERIALIZETYPE(tag, value) serialization::makePair(tag, value)
+#define SERIALIZETYPE_2(tag, value)         serialization::makePair(tag, value)
+#define SERIALIZETYPE_3(tag, value, type)   serialization::makePair(tag, value, type)
 
+
+#define EXPAND(args) args
+#define MAKE_TAG_COUNT(TAG, _3,_2,_1,N,...) TAG##N
+#define SERIALIZETYPE(...) EXPAND(MAKE_TAG_COUNT(SERIALIZETYPE, __VA_ARGS__, _3,_2,_1) (__VA_ARGS__))
 
 #endif

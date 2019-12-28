@@ -71,7 +71,7 @@ namespace serialization {
 
         template<typename T>
         PBEncoder& operator&(const serializePair<std::vector<T> >& pair) {
-            if (pair.tag() == PACK) {
+            if (pair.type() == PACK) {
                 return encodeRepaetedPack(pair);
             }
 
@@ -101,16 +101,7 @@ namespace serialization {
             strTemp.swap(_str);
             uint32_t size = pair.value().size();
             for (uint32_t i = 0; i < size; ++i) {
-                if (isMessage<T>::YES) {
-                    std::string strItem;
-                    strItem.swap(_str);
-                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
-                    _str.swap(strItem);
-                    varInt(strItem.length());
-                    _str.append(strItem);
-                } else {
-                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
-                }
+                valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
             }
             _str.swap(strTemp);
             varInt(strTemp.length());
