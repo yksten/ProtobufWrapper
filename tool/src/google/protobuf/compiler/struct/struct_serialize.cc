@@ -122,10 +122,13 @@ namespace google {
                 }
 
                 void codeSerialize::print(google::protobuf::io::Printer& printer, const char* szName)const {
-                    std::string toupperName(szName);
-                    std::transform(toupperName.begin(), toupperName.end(), toupperName.begin(), ::toupper);
+                    std::string strStructName(szName), strNameSpace;
+                    if (!(_file->package()).empty())
+                        strNameSpace.append((_file->package())).append("_");
+                    std::transform(strStructName.begin(), strStructName.end(), strStructName.begin(), ::toupper);
+                    std::transform(strNameSpace.begin(), strNameSpace.end(), strNameSpace.begin(), ::toupper);
                     //1.program once
-                    printer.Print("#ifndef __\$basename$\__H_\n#define __\$basename$\__H_\n", "basename", toupperName);
+                    printer.Print("#ifndef __$nameSpace$$basename$__H_\n#define __$nameSpace$$basename$__H_\n", "basename", strStructName, "nameSpace", strNameSpace);
                     //2.include
                     printInclude(printer);
                     //3.namespace
@@ -136,7 +139,7 @@ namespace google {
                     printStruct(printer);
                     //4.serialize functions
                     printSerialize(printer);
-                    printer.Print("\n#enif\n");
+                    printer.Print("\n#endif\n");
                 }
 
                 void codeSerialize::printInclude(google::protobuf::io::Printer& printer)const {
@@ -154,13 +157,14 @@ namespace google {
                 }
 
                 void codeSerialize::printStruct(google::protobuf::io::Printer& printer)const {
-                    printer.Print("namespace \$name$\{\n", "name", _file->package());
+                    if (!_file->package().empty())
+                        printer.Print("namespace $name$\{\n", "name", _file->package());
                     uint32_t size = _message_generators.size();
                     for (uint32_t i = 0; i < size; ++i) {
                         const FieldDescriptorArr& messages = _message_generators.at(i);
                         if (messages._vec.empty()) continue;
                         if (i) printer.Print("\n");
-                        printer.Print("    struct \$struName$\{\n        \$struName$\()", "struName", messages._name);
+                        printer.Print("struct $struName$\{\n        $struName$\()", "struName", messages._name);
                         std::string fields;
                         uint32_t message_size = messages._vec.size();
                         for (uint32_t idx = 0, flag = 0; idx < message_size; ++idx) {
@@ -170,13 +174,13 @@ namespace google {
                                     && field->type() != FieldDescriptor::TYPE_MESSAGE);
                                 if (init) {
                                     if (!flag) printer.Print(": "); else printer.Print(", ");
-                                    printer.Print("\$fieldName$\(", "fieldName", field->name());
+                                    printer.Print("$fieldName$\(", "fieldName", field->name());
                                     if (field->has_default_value())
                                         printer.Print("$value$", "value", type2value(*field));
                                     printer.Print(")");
                                     flag = 1;
                                 }
-                                fields.append("        ");
+                                fields.append("    ");
                                 if (field->is_repeated()) {
                                     fields.append("std::vector<").append(type2string(*field)).append(">");
                                 } else {
@@ -185,9 +189,10 @@ namespace google {
                                 fields.append(" ").append(field->name()).append(";\n");
                             }
                         }
-                        printer.Print(" {}\n\$fields$\    };\n", "fields", fields);
+                        printer.Print(" {}\n$fields$\};\n", "fields", fields);
                     }
-                    printer.Print("}\n");
+                    if (!_file->package().empty())
+                        printer.Print("}\n");
                 }
 
 
@@ -197,7 +202,7 @@ namespace google {
                     for (uint32_t i = 0; i < size; ++i) {
                         const FieldDescriptorArr& messages = _message_generators.at(i);
                         if (messages._vec.empty()) continue;
-                        printer.Print("\ntemplate<typename T>\ninline void serialize(T& t, \$nameSpace\$::\$struName\$& item) {\n    t", "nameSpace", _file->package(), "struName", messages._name);
+                        printer.Print("\ntemplate<typename T>\ninline void serialize(T& t, $nameSpace$::$struName$& item) {\n    t", "nameSpace", _file->package(), "struName", messages._name);
                         uint32_t message_size = messages._vec.size();
                         for (uint32_t idx = 0, flag = 0; idx < message_size; ++idx) {
                             if (const FieldDescriptor* field = messages._vec.at(idx)) {
