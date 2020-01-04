@@ -164,7 +164,7 @@ namespace google {
                         const FieldDescriptorArr& messages = _message_generators.at(i);
                         if (messages._vec.empty()) continue;
                         if (i) printer.Print("\n");
-                        printer.Print("struct $struName$\{\n        $struName$\()", "struName", messages._name);
+                        printer.Print("struct $struName$\{\n    $struName$\()", "struName", messages._name);
                         std::string fields;
                         uint32_t message_size = messages._vec.size();
                         for (uint32_t idx = 0, flag = 0; idx < message_size; ++idx) {
