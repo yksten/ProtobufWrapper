@@ -56,7 +56,8 @@ namespace serialization {
             if (!isMessage<T>::YES) {
                 uint64_t tag = ((uint64_t)pair.tag() << 3) | isMessage<T>::WRITE_TYPE;
                 varInt(tag);
-                return encodeValue(pair.value(), pair.type());
+                valueEncoder<isMessage<T>::YES>::encode(pair.value(), pair.type(), *this);
+                return *this;
             }
             uint64_t tag = ((uint64_t)pair.tag() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);

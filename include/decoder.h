@@ -44,7 +44,8 @@ namespace serialization {
                 uint32_t temp = tagWriteType();
                 assert(pair.tag() == tag(temp));
                 assert(isMessage<T>::WRITE_TYPE == writeType(temp));
-                return decodeValue(pair.value(), pair.type());
+                valueDecoder<isMessage<T>::YES>::decode(pair.value(), pair.type(), *this);
+                return *this;
             }
             uint32_t temp = tagWriteType();
             assert(pair.tag() == tag(temp));
@@ -65,7 +66,8 @@ namespace serialization {
                 uint32_t cur = _cur;
                 uint32_t temp = tagWriteType();
                 if (pair.tag() == tag(temp) && WT_LENGTH_DELIMITED == writeType(temp)) {
-                    assert(varInt());
+                    if (isMessage<T>::YES)
+                        assert(varInt());
                     T item = T();
                     valueDecoder<isMessage<T>::YES>::decode(item, pair.type(), *this);
                     pair.value().push_back(item);
