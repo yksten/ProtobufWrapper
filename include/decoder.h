@@ -21,7 +21,7 @@ namespace serialization {
             template <typename OUT>
             static void decode(serializePair<OUT>& out, PBDecoder& decoder) {
                 picoproto::Message* msg = decoder.getCurMsg(); {
-                    decoder.setCurMsg(_curMsg->GetMessage(out.num()));
+                    decoder.setCurMsg(decoder.getMessage(out.num()));
                     decoder.operator>>(out.value());
                 } decoder.setCurMsg(msg);
             }
@@ -33,7 +33,7 @@ namespace serialization {
                 if (repaetedMsg.empty()) return;
                 for (uint32_t idx = 0; idx < repaetedMsg.size(); ++idx) {
                     decoder.setCurMsg(repaetedMsg.at(idx));
-                    typename TypeTraits<T>::Type item = TypeTraits<T>::Type();
+                    typename TypeTraits<T>::Type item = typename TypeTraits<T>::Type();
                     decoder.operator>>(item);
                     out.value().push_back(item);
                 }
@@ -78,6 +78,7 @@ namespace serialization {
             return *this;
         }
     private:
+        picoproto::Message* getMessage(int32_t number);
         std::vector<picoproto::Message*> getMessageArray(int32_t number);
 
         template<typename T>

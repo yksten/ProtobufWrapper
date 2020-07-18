@@ -14,6 +14,10 @@ namespace serialization {
             delete _rootMsg;
     }
 
+    picoproto::Message* PBDecoder::getMessage(int32_t number) {
+        return _curMsg->GetMessage(number);
+    }
+
     std::vector<picoproto::Message*> PBDecoder::getMessageArray(int32_t number) {
         return _curMsg->GetMessageArray(number);
     }
