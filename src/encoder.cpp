@@ -2,23 +2,15 @@
 
 namespace serialization {
     PBEncoder::writeValue const PBEncoder::functionArray[] = { &PBEncoder::varInt, &PBEncoder::svarInt, &PBEncoder::fixed32, &PBEncoder::fixed64, };
-    PBEncoder::PBEncoder() {
+    PBEncoder::PBEncoder(BufferWrapper& buffer) :_buffer(buffer) {
     }
 
     PBEncoder::~PBEncoder() {
     }
 
-    const char* PBEncoder::data()const {
-        return _str.c_str();
-    }
-
-    uint32_t PBEncoder::size()const {
-        return _str.size();
-    }
-
     PBEncoder& PBEncoder::encodeValue(const std::string& v, int32_t type) {
         varInt(v.length());
-        _str.append(v);
+        _buffer.append(v.c_str(), v.size());
         return *this;
     }
 
@@ -30,7 +22,7 @@ namespace serialization {
         bytes[1] = (uint8_t)((i >> 8) & 0xFF);
         bytes[2] = (uint8_t)((i >> 16) & 0xFF);
         bytes[3] = (uint8_t)((i >> 24) & 0xFF);
-        _str.append((const char*)bytes, 4);
+        _buffer.append(bytes, 4);
         return *this;
     }
 
@@ -46,7 +38,7 @@ namespace serialization {
         bytes[5] = (uint8_t)((i >> 40) & 0xFF);
         bytes[6] = (uint8_t)((i >> 48) & 0xFF);
         bytes[7] = (uint8_t)((i >> 56) & 0xFF);
-        _str.append((const char*)bytes, 8);
+        _buffer.append(bytes, 8);
         return *this;
     }
 
@@ -57,7 +49,7 @@ namespace serialization {
     void PBEncoder::varInt(uint64_t value) {
         if (value <= 0x7F) {
             char byte = (char)value;
-            _str.append(1, byte);
+            _buffer.append(&byte, 1);
         } else {
             encodeVarint32((uint32_t)value, (uint32_t)(value >> 32));
         }
@@ -76,7 +68,7 @@ namespace serialization {
         uint32_t val = static_cast<uint32_t>(value);
         uint8_t bytes[4] = { (uint8_t)(val & 0xFF), (uint8_t)((val >> 8) & 0xFF),
             (uint8_t)((val >> 16) & 0xFF), (uint8_t)((val >> 24) & 0xFF) };
-        _str.append((const char*)bytes, 4);
+        _buffer.append(bytes, 4);
     }
 
     void PBEncoder::fixed64(uint64_t value) {
@@ -84,7 +76,7 @@ namespace serialization {
             (uint8_t)((value >> 16) & 0xFF), (uint8_t)((value >> 24) & 0xFF),
             (uint8_t)((value >> 32) & 0xFF), (uint8_t)((value >> 40) & 0xFF),
             (uint8_t)((value >> 48) & 0xFF), (uint8_t)((value >> 56) & 0xFF) };
-        _str.append((const char*)bytes, 8);
+        _buffer.append(bytes, 8);
     }
 
     void PBEncoder::encodeVarint32(uint32_t low, uint32_t high) {
@@ -112,6 +104,6 @@ namespace serialization {
             }
         }
         buffer[i++] = byte;
-        _str.append(buffer, i);
+        _buffer.append(buffer, i);
     }
 }

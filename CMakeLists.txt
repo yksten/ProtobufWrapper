@@ -16,7 +16,7 @@ AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 SET(THIRDPARTY "./thirdParty/picoproto.h" "./thirdParty/picoproto.cpp")
 SOURCE_GROUP(thirdParty FILES ${THIRDPARTY})
 
-SET(SRC "./include/serialize.h" "./include/encoder.h" "./include/decoder.h" "./src/encoder.cpp" "./src/decoder.cpp")
+SET(SRC "./include/serialize.h" "./include/encoder.h" "./include/decoder.h" "./src/serialize.cpp" "./src/encoder.cpp" "./src/decoder.cpp")
 SOURCE_GROUP(src FILES ${SRC})
 
 LIST(REMOVE_ITEM DIR_SRCS "./tester/main.cpp")

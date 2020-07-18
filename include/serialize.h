@@ -4,6 +4,23 @@
 #include <vector>
 
 namespace serialization {
+
+    class BufferWrapper {
+        std::vector<char> _buffer;
+        size_t _index;
+        enum { INITIALSIZE = 8 };
+
+    public:
+        explicit BufferWrapper(size_t nSize = INITIALSIZE);
+
+        char* data() { return &(*_buffer.begin()); }
+        const char* data() const { return &(*_buffer.begin()); }
+        size_t size() const { return _index; }
+
+        void append(const void* data, size_t len);
+        void swap(BufferWrapper& that);
+    };
+
     enum {
         WT_VARINT             = 0,    // int32,int64,uint32,uint64,sint32,sin64,bool,enum
         WT_64BIT              = 1,    // fixed64,sfixed64,double
@@ -23,7 +40,7 @@ namespace serialization {
     };
 
     template <typename T>
-    class isMessage {
+    struct isMessage {
     private:
         template < typename C, C&(C::*)(const C&) = &C::operator=> static char check(C*);
         template<typename C> static int32_t check(...);
@@ -33,20 +50,17 @@ namespace serialization {
     };
 
     template<>
-    class isMessage<std::string> {
-    public:
+    struct isMessage<std::string> {
         enum { YES = 0, WRITE_TYPE = WT_LENGTH_DELIMITED };
     };
 
     template<>
-    class isMessage<float> {
-    public:
+    struct isMessage<float> {
         enum { YES = 0, WRITE_TYPE = WT_32BIT };
     };
 
     template<>
-    class isMessage<double> {
-    public:
+    struct isMessage<double> {
         enum { YES = 0, WRITE_TYPE = WT_64BIT };
     };
 
@@ -101,6 +115,7 @@ namespace serialization {
     inline serializePair<VALUE> makePair(uint32_t num, VALUE& value, int32_t type) {
         return serializePair<VALUE>(num, value, type);
     }
+
 }
 
 

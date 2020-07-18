@@ -1,5 +1,5 @@
-#ifndef __PB_DECODER_H__
-#define __PB_DECODER_H__
+#ifndef __PROTOBUF_DECODER_H__
+#define __PROTOBUF_DECODER_H__
 #include <assert.h>
 #include <string>
 #include <vector>

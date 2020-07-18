@@ -1,5 +1,5 @@
-#ifndef __PB_ENCODER_H__
-#define __PB_ENCODER_H__
+#ifndef __PROTOBUF_ENCODER_H__
+#define __PROTOBUF_ENCODER_H__
 #include <string>
 #include <vector>
 #include "serialize.h"
@@ -25,19 +25,19 @@ namespace serialization {
             }
         };
         friend struct valueEncoder<1>;
-        std::string _str;
+        BufferWrapper& _buffer;
     public:
-        PBEncoder();
+        PBEncoder(BufferWrapper& _buffer);
         ~PBEncoder();
 
         const char* data()const;
         uint32_t size()const;
 
         template<typename T>
-        PBEncoder& operator<<(const T& value) {
+        bool operator<<(const T& value) {
             T* pValue = const_cast<T*>(&value);
             serializeWrapper(*this, *pValue);
-            return *this;
+            return true;
         }
 
         template<typename T>
@@ -50,12 +50,12 @@ namespace serialization {
             }
             uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
-            std::string strTemp;
-            strTemp.swap(_str);
+            BufferWrapper bfTemp;
+            bfTemp.swap(_buffer);
             valueEncoder<isMessage<T>::YES>::encode(pair.value(), pair.type(), *this);
-            varInt(_str.length());
-            strTemp.append(_str);
-            _str.swap(strTemp);
+            varInt(_buffer.size());
+            bfTemp.append(_buffer.data(), _buffer.size());
+            _buffer.swap(bfTemp);
             return *this;
         }
 
@@ -70,12 +70,12 @@ namespace serialization {
             for (uint32_t i = 0; i < size; ++i) {
                 varInt(tag);
                 if (isMessage<T>::YES) {
-                    std::string strTemp;
-                    strTemp.swap(_str);
+                    BufferWrapper bfTemp;
+                    bfTemp.swap(_buffer);
                     valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
-                    _str.swap(strTemp);
-                    varInt(strTemp.length());
-                    _str.append(strTemp.c_str(), strTemp.length());
+                    _buffer.swap(bfTemp);
+                    varInt(bfTemp.size());
+                    _buffer.append(bfTemp.data(), bfTemp.size());
                 } else {
                     valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
                 }
@@ -87,15 +87,15 @@ namespace serialization {
         PBEncoder& encodeRepaetedPack(const serializePair<std::vector<T> >& pair) {
             uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
-            std::string strTemp;
-            strTemp.swap(_str);
+            BufferWrapper bfTemp;
+            bfTemp.swap(_buffer);
             uint32_t size = pair.value().size();
             for (uint32_t i = 0; i < size; ++i) {
                 valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
             }
-            _str.swap(strTemp);
-            varInt(strTemp.length());
-            _str.append(strTemp);
+            _buffer.swap(bfTemp);
+            varInt(bfTemp.size());
+            _buffer.append(bfTemp.data(), bfTemp.size());
             return *this;
         }
         PBEncoder& encodeValue(const std::string& v, int32_t type);

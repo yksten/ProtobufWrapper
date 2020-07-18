@@ -64,13 +64,17 @@ int main(int argc, char* argv[]) {
         struExamples items;
         items._v.push_back(item);
         item._id = 2;
+        item._str = "afexample";
+        item._i = 5.7f;
+        item._num = 89.8f;
         items._v.push_back(item);
 
-        serialization::PBEncoder encoder;
+        serialization::BufferWrapper buffer;
+        serialization::PBEncoder encoder(buffer);
         encoder << items;
 
         struExamples items2;
-        serialization::PBDecoder decoder(encoder.data(), encoder.size());
+        serialization::PBDecoder decoder(buffer.data(), buffer.size());
         decoder >> items2;
     }
 
