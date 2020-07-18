@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include "serialize.h"
-#include "thirdParty/picoproto.h"
 
 namespace picoproto {
     class Message;
@@ -30,7 +29,7 @@ namespace serialization {
             template <typename T>
             static void decodeRepaeted(serializePair<std::vector<T> >& out, PBDecoder& decoder) {
                 picoproto::Message* msg = decoder.getCurMsg();
-                std::vector<picoproto::Message*> repaetedMsg = msg->GetMessageArray(out.num());
+                std::vector<picoproto::Message*> repaetedMsg = decoder.getMessageArray(out.num());
                 if (repaetedMsg.empty()) return;
                 for (uint32_t idx = 0; idx < repaetedMsg.size(); ++idx) {
                     decoder.setCurMsg(repaetedMsg.at(idx));
@@ -79,6 +78,8 @@ namespace serialization {
             return *this;
         }
     private:
+        std::vector<picoproto::Message*> getMessageArray(int32_t number);
+
         template<typename T>
         void decodeValue(serializePair<T>& v);
 

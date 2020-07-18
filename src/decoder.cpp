@@ -1,5 +1,5 @@
 #include "decoder.h"
-
+#include "thirdParty/picoproto.h"
 
 namespace serialization {
 
@@ -12,6 +12,10 @@ namespace serialization {
     PBDecoder::~PBDecoder() {
         if (_rootMsg)
             delete _rootMsg;
+    }
+
+    std::vector<picoproto::Message*> PBDecoder::getMessageArray(int32_t number) {
+        return _curMsg->GetMessageArray(number);
     }
 
     template<>
