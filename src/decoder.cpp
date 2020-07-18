@@ -1,116 +1,176 @@
 #include "decoder.h"
 
+
 namespace serialization {
-    PBDecoder::readValue const PBDecoder::functionArray[] = { &PBDecoder::varInt, &PBDecoder::svarInt, &PBDecoder::fixed32, &PBDecoder::fixed64, };
+
     PBDecoder::PBDecoder(const char* sz, unsigned int size)
-        :_szBuf(sz), _size(size), _cur(0) {
+        : _rootMsg(new picoproto::Message)
+        , _curMsg(_rootMsg)
+        , _bParseRet(_rootMsg->ParseFromBytes((uint8_t*)sz, size)) {
     }
 
     PBDecoder::~PBDecoder() {
-        assert(_cur == _size);
+        if (_rootMsg)
+            delete _rootMsg;
     }
 
-    const PBDecoder& PBDecoder::decodeValue(std::string& v, int32_t type) const {
-        uint64_t length = varInt();
-        assert(_cur + length <= _size);
-        v.append(_szBuf + _cur, length);
-        _cur += length;
-        return *this;
+    template<>
+    void PBDecoder::decodeValue(serializePair<bool>& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetBool(v.num());
     }
 
-    const PBDecoder& PBDecoder::decodeValue(float& v, int32_t type) const {
-        assert(_cur + 4 <= _size);
-        uint8_t szTemp[4] = { 0 };
-        memcpy(szTemp, _szBuf + _cur, 4);
-        union { float f; uint32_t i; };
-        i = ((uint32_t)szTemp[0] << 0) | ((uint32_t)szTemp[1] << 8) | ((uint32_t)szTemp[2] << 16) | ((uint32_t)szTemp[3] << 24);
-        v = f;
-        _cur += 4;
-        return *this;
-    }
+    template<>
+    void PBDecoder::decodeValue(serializePair<int32_t>& v) {
+        if (!_curMsg) return;
 
-    const PBDecoder& PBDecoder::decodeValue(double& v, int32_t type) const {
-        assert(_cur + 8 <= _size);
-        uint8_t szTemp[8] = { 0 };
-        memcpy(szTemp, _szBuf + _cur, 8);
-        union { double db; uint64_t i; };
-        i = ((uint64_t)szTemp[0] << 0) | ((uint64_t)szTemp[1] << 8) | ((uint64_t)szTemp[2] << 16) | ((uint64_t)szTemp[3] << 24) | ((uint64_t)szTemp[4] << 32) | ((uint64_t)szTemp[5] << 40) | ((uint64_t)szTemp[6] << 48) | ((uint64_t)szTemp[7] << 56);
-        v = db;
-        _cur += 8;
-        return *this;
-    }
-
-    char PBDecoder::readByte()const {
-        assert(_cur <= _size);
-        char ch = _szBuf[_cur];
-        ++_cur;
-        return ch;
-    }
-
-    uint32_t PBDecoder::tagWriteType()const {
-        uint32_t result = 0;
-        char byte = readByte();
-        if (byte & 0x80 == 0) {
-            result = byte;
+        if (v.type() == TYPE_SVARINT) {
+            v.value() = _curMsg->GetInt32(v.num());
+        } else if (v.type() == TYPE_FIXED32) {
+            v.value() = (int32_t)_curMsg->GetUInt32(v.num());
         } else {
-            result = byte & 0x7F;
-            for (uint8_t bitpos = 7; (byte & 0x80); bitpos = (uint8_t)(bitpos + 7)) {
-                byte = readByte();
-                if (bitpos >= 32) {
-                    /* Note: The varint could have trailing 0x80 bytes, or 0xFF for negative. */
-                    uint8_t sign_extension = (bitpos < 63) ? 0xFF : 0x01;
-                    if ((byte & 0x7F) != 0x00 && ((result >> 31) == 0 || byte != sign_extension)) {
-                        assert(false);//"varint overflow";
-                    }
-                    continue;
-                }
-                result |= (uint32_t)(byte & 0x7F) << bitpos;
+            v.value() = (int32_t)_curMsg->GetUInt64(v.num());
+        }
+    }
+
+    template<>
+    void PBDecoder::decodeValue(serializePair<uint32_t>& v) {
+        if (!_curMsg) return;
+
+        if (v.type() == TYPE_FIXED32) {
+            v.value() = _curMsg->GetUInt32(v.num());
+        } else {
+            v.value() = (uint32_t)_curMsg->GetUInt64(v.num());
+        }
+    }
+
+    template<>
+    void PBDecoder::decodeValue(serializePair<int64_t>& v) {
+        if (!_curMsg) return;
+
+        if (v.type() == TYPE_SVARINT) {
+            v.value() = _curMsg->GetInt64(v.num());
+        } else {
+            v.value() = (int64_t)_curMsg->GetUInt64(v.num());
+        }
+    }
+
+    template<>
+    void PBDecoder::decodeValue(serializePair<uint64_t>& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetUInt64(v.num());
+    }
+
+    template<>
+    void PBDecoder::decodeValue(serializePair<float>& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetFloat(v.num());
+    }
+
+    template<>
+    void PBDecoder::decodeValue(serializePair<double>& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetDouble(v.num());
+    }
+
+    template<>
+    void PBDecoder::decodeValue(serializePair<std::string>& v) {
+        if (!_curMsg) return;
+
+        if (v.type() == TYPE_BYTES) {
+            std::pair<uint8_t*, size_t> temp = _curMsg->GetBytes(v.num());
+            v.value().clear();
+            v.value().append((const char*)temp.first, temp.second);
+        } else {
+            v.value() = _curMsg->GetString(v.num());
+        }
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<bool> >& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetBoolArray(v.num());
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<int32_t> >& v) {
+        if (!_curMsg) return;
+
+        if (v.type() == TYPE_SVARINT) {
+            v.value() = _curMsg->GetInt32Array(v.num());
+        } else if (v.type() == TYPE_FIXED32) {
+            std::vector<uint32_t > temp = _curMsg->GetUInt32Array(v.num());
+            v.value().assign(temp.begin(), temp.end());
+        } else {
+            std::vector<uint64_t > temp = _curMsg->GetUInt64Array(v.num());
+            v.value().assign(temp.begin(), temp.end());
+        }
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<uint32_t> >& v) {
+        if (!_curMsg) return;
+
+        if (v.type() == TYPE_FIXED32) {
+            std::vector<uint32_t > temp = _curMsg->GetUInt32Array(v.num());
+            v.value().assign(temp.begin(), temp.end());
+        } else {
+            std::vector<uint64_t > temp = _curMsg->GetUInt64Array(v.num());
+            v.value().assign(temp.begin(), temp.end());
+        }
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<int64_t> >& v) {
+        if (!_curMsg) return;
+
+        if (v.type() == TYPE_SVARINT) {
+            v.value() = _curMsg->GetInt64Array(v.num());
+        } else {
+            std::vector<uint64_t > temp = _curMsg->GetUInt64Array(v.num());
+            v.value().assign(temp.begin(), temp.end());
+        }
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<uint64_t> >& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetUInt64Array(v.num());
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<float> >& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetFloatArray(v.num());
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<double> >& v) {
+        if (!_curMsg) return;
+
+        v.value() = _curMsg->GetDoubleArray(v.num());
+    }
+
+    template<>
+    void PBDecoder::decodeRepaeted(serializePair<std::vector<std::string> >& v) {
+        if (!_curMsg) return;
+
+        if (v.type() == TYPE_BYTES) {
+            std::vector<std::pair<uint8_t*, size_t> > temp = _curMsg->GetByteArray(v.num());
+            for (uint32_t idx = 0; idx < temp.size(); ++idx) {
+                const std::pair<uint8_t*, size_t>& item = temp.at(idx);
+                v.value().push_back(std::string((const char*)(item.first), item.second));
             }
+        } else {
+            v.value() = _curMsg->GetStringArray(v.num());
         }
-        return result;
     }
 
-    uint64_t PBDecoder::value(int32_t type)const {
-        return (this->*functionArray[type])();
-    }
-
-    uint64_t PBDecoder::varInt()const {
-        assert(_cur <= _size);
-        char byte = readByte();
-        uint64_t result = byte;
-        for (uint8_t bitpos = 7; (byte & 0x80); bitpos = (uint8_t)(bitpos + 7)) {
-            if (bitpos >= 64)
-                assert(false);//"varint overflow";
-
-            byte = readByte();
-            result |= (uint64_t)(byte & 0x7F) << bitpos;
-        }
-        return result;
-    }
-
-    uint64_t PBDecoder::svarInt()const {
-        uint64_t value = varInt();
-        if (value & 1) {
-            return (uint64_t)(~(value >> 1));
-        }
-        return (uint64_t)(value >> 1);
-    }
-
-    uint64_t PBDecoder::fixed32()const {
-        assert(_cur + 4 <= _size);
-        uint8_t szTemp[4] = { 0 };
-        memcpy(szTemp, _szBuf + _cur, 4);
-        uint32_t i = ((uint32_t)szTemp[0] << 0) | ((uint32_t)szTemp[1] << 8) | ((uint32_t)szTemp[2] << 16) | ((uint32_t)szTemp[3] << 24);
-        _cur += 4;
-        return i;
-    }
-
-    uint64_t PBDecoder::fixed64()const {
-        assert(_cur + 8 <= _size);
-        uint8_t szTemp[8] = { 0 };
-        memcpy(szTemp, _szBuf + _cur, 8);
-        uint64_t i = ((uint64_t)szTemp[0] << 0) | ((uint64_t)szTemp[1] << 8) | ((uint64_t)szTemp[2] << 16) | ((uint64_t)szTemp[3] << 24) | ((uint64_t)szTemp[4] << 32) | ((uint64_t)szTemp[5] << 40) | ((uint64_t)szTemp[6] << 48) | ((uint64_t)szTemp[7] << 56);
-        _cur += 8;
-        return i;
-    }
 }

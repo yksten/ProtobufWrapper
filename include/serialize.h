@@ -1,24 +1,25 @@
 #ifndef __SERIALIZATION_H__
 #define __SERIALIZATION_H__
 #include <stdint.h>
+#include <vector>
 
 namespace serialization {
     enum {
-        WT_VARINT             = 0,    //int32,int64,uint32,uint64,sint32,sin64,bool,enum
-        WT_64BIT              = 1,    //fixed64,sfixed64,double
-        WT_LENGTH_DELIMITED   = 2,    //string,bytes,embedded messages,packed repeated fields
-        WT_START_GROUP        = 3,    //Groups(deprecated)
-        WT_END_GROUP          = 4,    //Groups(deprecated)
-        WT_32BIT              = 5,    //fixed32,sfixed32,float
+        WT_VARINT             = 0,    // int32,int64,uint32,uint64,sint32,sin64,bool,enum
+        WT_64BIT              = 1,    // fixed64,sfixed64,double
+        WT_LENGTH_DELIMITED   = 2,    // string,bytes,embedded messages,packed repeated fields
+        WT_START_GROUP        = 3,    // Groups(deprecated)
+        WT_END_GROUP          = 4,    // Groups(deprecated)
+        WT_32BIT              = 5,    // fixed32,sfixed32,float
     };
 
     enum {
-        FN_VARINT  = 0,    //int32,int64,uint32,uint64,bool,enum
-        FN_SVARINT = 1,    //sint32,sin64
-        FN_FIXED32 = 2,    //fixed32,sfixed32
-        FN_FIXED64 = 3,    //fixed64,sfixed64
-        FN_MAX        ,
-        PACK          ,    //repaeted [pack=true]
+        TYPE_VARINT  = 0,    // int32,int64,uint32,uint64,bool,enum
+        TYPE_SVARINT = 1,    // sint32,sin64
+        TYPE_FIXED32 = 2,    // fixed32,sfixed32
+        TYPE_FIXED64 = 3,    // fixed64,sfixed64
+        TYPE_BYTES   = 4,    // bytes
+        TYPE_PACK    = 5,    // repaeted [pack=true]
     };
 
     template <typename T>
@@ -66,35 +67,45 @@ namespace serialization {
         serialize(t, c);
     }
 
+    template<typename T>
+    struct TypeTraits {
+        typedef T Type;
+    };
+
+    template<typename T>
+    struct TypeTraits<std::vector<T> > {
+        typedef std::vector<T> Type;
+    };
+
     template<typename VALUE>
     class serializePair {
-        const uint32_t _type;
-        const uint32_t _tag;
+        const uint32_t _num;
         VALUE& _value;
+        const uint32_t _type;
     public:
-        serializePair(uint32_t tag, VALUE& value) :_type(FN_VARINT), _tag(tag), _value(value) {}
-        serializePair(uint32_t tag, VALUE& value, uint32_t type) :_type(type), _tag(tag), _value(value) {}
+        serializePair(uint32_t num, VALUE& value) :_type(TYPE_VARINT), _num(num), _value(value) {}
+        serializePair(uint32_t num, VALUE& value, uint32_t type) :_type(type), _num(num), _value(value) {}
 
         uint32_t type() const { return _type; }
-        uint32_t tag() const { return _tag; }
+        uint32_t num() const { return _num; }
         VALUE& value() { return _value; }
         const VALUE& value() const { return _value; }
     };
 
     template<typename VALUE>
-    inline serializePair<VALUE> makePair(uint32_t tag, VALUE& value) {
-        return serializePair<VALUE>(tag, value);
+    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value) {
+        return serializePair<VALUE>(num, value);
     }
 
     template<typename VALUE>
-    inline serializePair<VALUE> makePair(uint32_t tag, VALUE& value, int32_t type) {
-        return serializePair<VALUE>(tag, value, type);
+    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value, int32_t type) {
+        return serializePair<VALUE>(num, value, type);
     }
 }
 
 
-#define SERIALIZETYPE_2(tag, value)         serialization::makePair(tag, value)
-#define SERIALIZETYPE_3(tag, value, type)   serialization::makePair(tag, value, type)
+#define SERIALIZETYPE_2(num, value)         serialization::makePair(num, value)
+#define SERIALIZETYPE_3(num, value, type)   serialization::makePair(num, value, type)
 
 
 #define EXPAND(args) args

@@ -33,27 +33,27 @@ struct struExamples {
 
 template<typename T>
 void serialize(T& t, struExamples& items) {
-    t & SERIALIZETYPE(1, items._v, serialization::PACK);
+    t & SERIALIZETYPE(1, items._v, serialization::TYPE_PACK);
 }
 
 int main(int argc, char* argv[]) {
-    //if (argc > 1)
-    //{
-    //    std::ifstream file;
-    //    file.open(argv[1], std::ios::in | std::ios::binary);
-    //    assert(file.is_open());
-    //    file.seekg(0, file.end);
-    //    int length = file.tellg();
-    //    file.seekg(0, file.beg);
-    //    char* szBuffer = new char[length];
-    //    file.read(szBuffer, length);
-    //    file.close();
+    if (argc > 1)
+    {
+        std::ifstream file;
+        file.open(argv[1], std::ios::in | std::ios::binary);
+        assert(file.is_open());
+        file.seekg(0, file.end);
+        int length = file.tellg();
+        file.seekg(0, file.beg);
+        char* szBuffer = new char[length];
+        file.read(szBuffer, length);
+        file.close();
 
-    //    struExamples items;
-    //    serialization::PBDecoder decoder(szBuffer, length);
-    //    decoder >> items;
-    //    delete[] szBuffer;
-    //}
+        struExamples items;
+        serialization::PBDecoder decoder(szBuffer, length);
+        decoder >> items;
+        delete[] szBuffer;
+    }
 
     {
         struExample item;
@@ -63,6 +63,7 @@ int main(int argc, char* argv[]) {
         item._num = 19.8f;
         struExamples items;
         items._v.push_back(item);
+        item._id = 2;
         items._v.push_back(item);
 
         serialization::PBEncoder encoder;

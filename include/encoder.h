@@ -6,21 +6,10 @@
 
 
 namespace serialization {
-    template<typename T>
-    struct TypeTraits {
-        typedef T Type;
-        static bool isVector() { return false; }
-    };
-
-    template<typename T>
-    struct TypeTraits<std::vector<T> > {
-        typedef std::vector<T> Type;
-        static bool isVector() { return true; }
-    };
 
     class PBEncoder {
         typedef void(PBEncoder::*writeValue)(uint64_t);
-        static writeValue const functionArray[FN_MAX];
+        static writeValue const functionArray[4];
         template <int isStruct>
         struct valueEncoder {
             template <typename IN>
@@ -54,12 +43,12 @@ namespace serialization {
         template<typename T>
         PBEncoder& operator&(const serializePair<T>& pair) {
             if (!isMessage<T>::YES) {
-                uint64_t tag = ((uint64_t)pair.tag() << 3) | isMessage<T>::WRITE_TYPE;
+                uint64_t tag = ((uint64_t)pair.num() << 3) | isMessage<T>::WRITE_TYPE;
                 varInt(tag);
                 valueEncoder<isMessage<T>::YES>::encode(pair.value(), pair.type(), *this);
                 return *this;
             }
-            uint64_t tag = ((uint64_t)pair.tag() << 3) | WT_LENGTH_DELIMITED;
+            uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
             std::string strTemp;
             strTemp.swap(_str);
@@ -72,11 +61,11 @@ namespace serialization {
 
         template<typename T>
         PBEncoder& operator&(const serializePair<std::vector<T> >& pair) {
-            if (pair.type() == PACK) {
+            if (!isMessage<T>::YES && pair.type() == TYPE_PACK) {
                 return encodeRepaetedPack(pair);
             }
 
-            uint64_t tag = ((uint64_t)pair.tag() << 3) | WT_LENGTH_DELIMITED;
+            uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
             uint32_t size = pair.value().size();
             for (uint32_t i = 0; i < size; ++i) {
                 varInt(tag);
@@ -86,7 +75,7 @@ namespace serialization {
                     valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
                     _str.swap(strTemp);
                     varInt(strTemp.length());
-                    _str.append(strTemp);
+                    _str.append(strTemp.c_str(), strTemp.length());
                 } else {
                     valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
                 }
@@ -96,7 +85,7 @@ namespace serialization {
     private:
         template<typename T>
         PBEncoder& encodeRepaetedPack(const serializePair<std::vector<T> >& pair) {
-            uint64_t tag = ((uint64_t)pair.tag() << 3) | WT_LENGTH_DELIMITED;
+            uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
             std::string strTemp;
             strTemp.swap(_str);
