@@ -85,17 +85,17 @@ namespace google {
                     switch (field.type()) {
                     case FieldDescriptor::TYPE_FIXED64:
                     case FieldDescriptor::TYPE_SFIXED64:
-                        return ", serialization::FN_FIXED64";
+                        return ", serialization::TYPE_FIXED64";
                     case FieldDescriptor::TYPE_SINT32:
                     case FieldDescriptor::TYPE_SINT64:
-                        return ", serialization::FN_SVARINT";
+                        return ", serialization::TYPE_SVARINT";
                     case FieldDescriptor::TYPE_FIXED32:
                     case FieldDescriptor::TYPE_SFIXED32:
-                        return ", serialization::FN_FIXED32";
+                        return ", serialization::TYPE_FIXED32";
                     }
 
                     if (field.is_packed())
-                        return ", serialization::PACK";
+                        return ", serialization::TYPE_PACK";
 
                     return "";
                 }
