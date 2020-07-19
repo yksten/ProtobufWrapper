@@ -97,8 +97,8 @@ namespace serialization {
         VALUE& _value;
         const uint32_t _type;
     public:
-        serializePair(uint32_t num, VALUE& value) :_type(TYPE_VARINT), _num(num), _value(value) {}
-        serializePair(uint32_t num, VALUE& value, uint32_t type) :_type(type), _num(num), _value(value) {}
+        serializePair(uint32_t num, VALUE& value) : _num(num), _value(value), _type(TYPE_VARINT) {}
+        serializePair(uint32_t num, VALUE& value, uint32_t type) :_num(num),  _value(value), _type(type) {}
 
         uint32_t type() const { return _type; }
         uint32_t num() const { return _num; }
