@@ -198,7 +198,7 @@ namespace picoproto {
         }
     }
 
-    Message::Message() : copy_arrays(true) {}
+    Message::Message() : copy_arrays(false) {}
 
     Message::Message(bool copy_arrays) : copy_arrays(copy_arrays) {}
 
