@@ -6,15 +6,15 @@
 namespace serialization {
 
     class BufferWrapper {
-        std::vector<char> _buffer;
+        std::vector<uint8_t> _buffer;
         size_t _index;
         enum { INITIALSIZE = 8 };
 
     public:
         explicit BufferWrapper(size_t nSize = INITIALSIZE);
 
-        char* data() { return &(*_buffer.begin()); }
-        const char* data() const { return &(*_buffer.begin()); }
+        uint8_t* data() { return &(*_buffer.begin()); }
+        const uint8_t* data() const { return &(*_buffer.begin()); }
         size_t size() const { return _index; }
 
         void append(const void* data, size_t len);

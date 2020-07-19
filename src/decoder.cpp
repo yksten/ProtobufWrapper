@@ -1,12 +1,12 @@
 #include "decoder.h"
-#include "thirdParty/picoproto.h"
+#include "parse/proto.h"
 
 namespace serialization {
 
-    PBDecoder::PBDecoder(const char* sz, unsigned int size)
-        : _rootMsg(new picoproto::Message)
+    PBDecoder::PBDecoder(uint8_t* sz, unsigned int size)
+        : _rootMsg(new proto::Message)
         , _curMsg(_rootMsg)
-        , _bParseRet(_rootMsg->ParseFromBytes((uint8_t*)sz, size)) {
+        , _bParseRet(_rootMsg->ParseFromBytes(sz, size)) {
     }
 
     PBDecoder::~PBDecoder() {
@@ -14,11 +14,11 @@ namespace serialization {
             delete _rootMsg;
     }
 
-    picoproto::Message* PBDecoder::getMessage(int32_t number) {
+    proto::Message* PBDecoder::getMessage(int32_t number) {
         return _curMsg->GetMessage(number);
     }
 
-    std::vector<picoproto::Message*> PBDecoder::getMessageArray(int32_t number) {
+    std::vector<proto::Message*> PBDecoder::getMessageArray(int32_t number) {
         return _curMsg->GetMessageArray(number);
     }
 
@@ -26,7 +26,7 @@ namespace serialization {
     void PBDecoder::decodeValue(serializePair<bool>& v) {
         if (!_curMsg) return;
 
-        v.value() = _curMsg->GetBool(v.num());
+        v.value() = (bool)_curMsg->GetVarInt(v.num());
     }
 
     template<>
@@ -34,11 +34,11 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
-            v.value() = _curMsg->GetInt32(v.num());
+            v.value() = _curMsg->GetSInt(v.num());
         } else if (v.type() == TYPE_FIXED32) {
-            v.value() = (int32_t)_curMsg->GetUInt32(v.num());
+            v.value() = (int32_t)_curMsg->GetFixedInt32(v.num());
         } else {
-            v.value() = (int32_t)_curMsg->GetUInt64(v.num());
+            v.value() = (int32_t)_curMsg->GetVarInt(v.num());
         }
     }
 
@@ -47,9 +47,9 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_FIXED32) {
-            v.value() = _curMsg->GetUInt32(v.num());
+            v.value() = (uint32_t)_curMsg->GetFixedInt32(v.num());
         } else {
-            v.value() = (uint32_t)_curMsg->GetUInt64(v.num());
+            v.value() = (uint32_t)_curMsg->GetVarInt(v.num());
         }
     }
 
@@ -58,9 +58,9 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
-            v.value() = _curMsg->GetInt64(v.num());
+            v.value() = _curMsg->GetSInt(v.num());
         } else {
-            v.value() = (int64_t)_curMsg->GetUInt64(v.num());
+            v.value() = (int64_t)_curMsg->GetVarInt(v.num());
         }
     }
 
@@ -68,7 +68,11 @@ namespace serialization {
     void PBDecoder::decodeValue(serializePair<uint64_t>& v) {
         if (!_curMsg) return;
 
-        v.value() = _curMsg->GetUInt64(v.num());
+        if (v.type() == TYPE_SVARINT) {
+            v.value() = _curMsg->GetSInt(v.num());
+        } else {
+            v.value() = _curMsg->GetVarInt(v.num());
+        }
     }
 
     template<>
@@ -102,7 +106,7 @@ namespace serialization {
     void PBDecoder::decodeRepaeted(serializePair<std::vector<bool> >& v) {
         if (!_curMsg) return;
 
-        v.value() = _curMsg->GetBoolArray(v.num());
+        _curMsg->GetVarIntArray(v.num(), v.value());
     }
 
     template<>
@@ -110,13 +114,11 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
-            v.value() = _curMsg->GetInt32Array(v.num());
+            v.value() = _curMsg->GetSIntArray<int32_t>(v.num());
         } else if (v.type() == TYPE_FIXED32) {
-            std::vector<uint32_t > temp = _curMsg->GetUInt32Array(v.num());
-            v.value().assign(temp.begin(), temp.end());
+            _curMsg->GetFixedInt32Array(v.num(), v.value());
         } else {
-            std::vector<uint64_t > temp = _curMsg->GetUInt64Array(v.num());
-            v.value().assign(temp.begin(), temp.end());
+            _curMsg->GetVarIntArray(v.num(), v.value());
         }
     }
 
@@ -125,11 +127,9 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_FIXED32) {
-            std::vector<uint32_t > temp = _curMsg->GetUInt32Array(v.num());
-            v.value().assign(temp.begin(), temp.end());
+            _curMsg->GetFixedInt32Array(v.num(), v.value());
         } else {
-            std::vector<uint64_t > temp = _curMsg->GetUInt64Array(v.num());
-            v.value().assign(temp.begin(), temp.end());
+            _curMsg->GetVarIntArray(v.num(), v.value());
         }
     }
 
@@ -138,10 +138,9 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
-            v.value() = _curMsg->GetInt64Array(v.num());
+            v.value() = _curMsg->GetSIntArray<int64_t>(v.num());
         } else {
-            std::vector<uint64_t > temp = _curMsg->GetUInt64Array(v.num());
-            v.value().assign(temp.begin(), temp.end());
+            _curMsg->GetVarIntArray(v.num(), v.value());
         }
     }
 
@@ -149,21 +148,21 @@ namespace serialization {
     void PBDecoder::decodeRepaeted(serializePair<std::vector<uint64_t> >& v) {
         if (!_curMsg) return;
 
-        v.value() = _curMsg->GetUInt64Array(v.num());
+        _curMsg->GetVarIntArray(v.num(), v.value());
     }
 
     template<>
     void PBDecoder::decodeRepaeted(serializePair<std::vector<float> >& v) {
         if (!_curMsg) return;
 
-        v.value() = _curMsg->GetFloatArray(v.num());
+        _curMsg->GetFloatArray(v.num(), v.value());
     }
 
     template<>
     void PBDecoder::decodeRepaeted(serializePair<std::vector<double> >& v) {
         if (!_curMsg) return;
 
-        v.value() = _curMsg->GetDoubleArray(v.num());
+        _curMsg->GetDoubleArray(v.num(), v.value());
     }
 
     template<>
@@ -171,13 +170,14 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_BYTES) {
-            std::vector<std::pair<uint8_t*, size_t> > temp = _curMsg->GetByteArray(v.num());
+            std::vector<std::pair<uint8_t*, size_t> > temp;
+            _curMsg->GetByteArray(v.num(), temp);
             for (uint32_t idx = 0; idx < temp.size(); ++idx) {
                 const std::pair<uint8_t*, size_t>& item = temp.at(idx);
                 v.value().push_back(std::string((const char*)(item.first), item.second));
             }
         } else {
-            v.value() = _curMsg->GetStringArray(v.num());
+            _curMsg->GetStringArray(v.num(), v.value());
         }
     }
 

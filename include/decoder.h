@@ -5,15 +5,15 @@
 #include <vector>
 #include "serialize.h"
 
-namespace picoproto {
+namespace proto {
     class Message;
 }
 
 namespace serialization {
 
     class PBDecoder {
-        picoproto::Message* _rootMsg;
-        picoproto::Message* _curMsg;
+        proto::Message* _rootMsg;
+        proto::Message* _curMsg;
         bool _bParseRet;
 
         template <int isStruct>
@@ -28,8 +28,8 @@ namespace serialization {
 
             template <typename T>
             static void decodeRepaeted(serializePair<std::vector<T> >& out, PBDecoder& decoder) {
-                picoproto::Message* msg = decoder.getCurMsg();
-                std::vector<picoproto::Message*> repaetedMsg = decoder.getMessageArray(out.num());
+                proto::Message* msg = decoder.getCurMsg();
+                std::vector<proto::Message*> repaetedMsg = decoder.getMessageArray(out.num());
                 if (repaetedMsg.empty()) return;
                 for (uint32_t idx = 0; idx < repaetedMsg.size(); ++idx) {
                     decoder.setCurMsg(repaetedMsg.at(idx));
@@ -56,7 +56,7 @@ namespace serialization {
         PBDecoder(const PBDecoder&);
         PBDecoder& operator=(const PBDecoder&);
     public:
-        PBDecoder(const char* sz, uint32_t size);
+        PBDecoder(uint8_t* sz, uint32_t size);
         ~PBDecoder();
 
         template<typename T>
@@ -78,8 +78,8 @@ namespace serialization {
             return *this;
         }
     private:
-        picoproto::Message* getMessage(int32_t number);
-        std::vector<picoproto::Message*> getMessageArray(int32_t number);
+        proto::Message* getMessage(int32_t number);
+        std::vector<proto::Message*> getMessageArray(int32_t number);
 
         template<typename T>
         void decodeValue(serializePair<T>& v);
@@ -87,8 +87,8 @@ namespace serialization {
         template<typename T>
         void decodeRepaeted(serializePair<std::vector<T> >& v);
 
-        picoproto::Message* getCurMsg() { return _curMsg; }
-        void setCurMsg(picoproto::Message* msg) { _curMsg = msg; }
+        proto::Message* getCurMsg() { return _curMsg; }
+        void setCurMsg(proto::Message* msg) { _curMsg = msg; }
     };
 
 }

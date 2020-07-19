@@ -4,6 +4,8 @@
 #include "decoder.h"
 #include "encoder.h"
 
+#include "parse/proto.h"
+
 #ifdef _MSC_VER
 #include <io.h>
 #endif
@@ -50,7 +52,7 @@ int main(int argc, char* argv[]) {
         file.close();
 
         struExamples items;
-        serialization::PBDecoder decoder(szBuffer, length);
+        serialization::PBDecoder decoder((uint8_t*)szBuffer, length);
         decoder >> items;
         delete[] szBuffer;
     }
@@ -72,6 +74,17 @@ int main(int argc, char* argv[]) {
         serialization::BufferWrapper buffer;
         serialization::PBEncoder encoder(buffer);
         encoder << items;
+
+        proto::Message msg;
+        bool b = msg.ParseFromBytes(buffer.data(), buffer.size());
+        std::vector<proto::Message*>msgs = msg.GetMessageArray(1);
+        for (uint16_t i = 0; i < msgs.size(); ++i) {
+            proto::Message* item = msgs.at(i);
+            uint32_t id = item->GetVarInt(1);
+            std::string str = item->GetString(2);
+            float f = item->GetFloat(3);
+            double db = item->GetDouble(4);
+        }
 
         struExamples items2;
         serialization::PBDecoder decoder(buffer.data(), buffer.size());
