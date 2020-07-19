@@ -20,7 +20,7 @@ namespace serialization {
         struct valueDecoder {
             template <typename OUT>
             static void decode(serializePair<OUT>& out, PBDecoder& decoder) {
-                picoproto::Message* msg = decoder.getCurMsg(); {
+                proto::Message* msg = decoder.getCurMsg(); {
                     decoder.setCurMsg(decoder.getMessage(out.num()));
                     decoder.operator>>(out.value());
                 } decoder.setCurMsg(msg);
