@@ -56,7 +56,7 @@ namespace serialization {
         PBDecoder(const PBDecoder&);
         PBDecoder& operator=(const PBDecoder&);
     public:
-        PBDecoder(uint8_t* sz, uint32_t size);
+        PBDecoder(const uint8_t* sz, uint32_t size);
         ~PBDecoder();
 
         template<typename T>

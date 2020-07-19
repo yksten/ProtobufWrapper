@@ -3,7 +3,7 @@
 
 namespace serialization {
 
-    PBDecoder::PBDecoder(uint8_t* sz, unsigned int size)
+    PBDecoder::PBDecoder(const uint8_t* sz, unsigned int size)
         : _rootMsg(new proto::Message)
         , _curMsg(_rootMsg)
         , _bParseRet(_rootMsg->ParseFromBytes(sz, size)) {
@@ -34,7 +34,7 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
-            v.value() = _curMsg->GetSInt(v.num());
+            v.value() = (int32_t)_curMsg->GetSInt(v.num());
         } else if (v.type() == TYPE_FIXED32) {
             v.value() = (int32_t)_curMsg->GetFixedInt32(v.num());
         } else {
@@ -94,7 +94,7 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_BYTES) {
-            std::pair<uint8_t*, size_t> temp = _curMsg->GetBytes(v.num());
+            proto::binType temp = _curMsg->GetBytes(v.num());
             v.value().clear();
             v.value().append((const char*)temp.first, temp.second);
         } else {
@@ -170,10 +170,10 @@ namespace serialization {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_BYTES) {
-            std::vector<std::pair<uint8_t*, size_t> > temp;
+            std::vector<proto::binType> temp;
             _curMsg->GetByteArray(v.num(), temp);
             for (uint32_t idx = 0; idx < temp.size(); ++idx) {
-                const std::pair<uint8_t*, size_t>& item = temp.at(idx);
+                const proto::binType& item = temp.at(idx);
                 v.value().push_back(std::string((const char*)(item.first), item.second));
             }
         } else {

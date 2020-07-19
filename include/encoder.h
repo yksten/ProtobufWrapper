@@ -66,7 +66,7 @@ namespace serialization {
             }
 
             uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
-            uint32_t size = pair.value().size();
+            uint32_t size = (uint32_t)pair.value().size();
             for (uint32_t i = 0; i < size; ++i) {
                 varInt(tag);
                 if (isMessage<T>::YES) {
@@ -89,7 +89,7 @@ namespace serialization {
             varInt(tag);
             BufferWrapper bfTemp;
             bfTemp.swap(_buffer);
-            uint32_t size = pair.value().size();
+            uint32_t size = (uint32_t)pair.value().size();
             for (uint32_t i = 0; i < size; ++i) {
                 valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
             }

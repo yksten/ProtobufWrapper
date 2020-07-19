@@ -18,7 +18,7 @@ namespace proto {
         WIRETYPE_32BIT = 5,                 // fixed32,sfixed32,float
     };
 
-    typedef std::pair<uint8_t*, size_t> binType;
+    typedef std::pair<const uint8_t*, size_t> binType;
 
     class Message;
     struct Field {
@@ -45,7 +45,7 @@ namespace proto {
         std::vector<Field> _fields;
     public:
         Message();
-        bool ParseFromBytes(uint8_t* szBin, size_t nBinSize);
+        bool ParseFromBytes(const uint8_t* szBin, size_t nBinSize);
 
         uint64_t GetSInt(uint32_t number);
         uint64_t GetVarInt(uint32_t number);
@@ -66,11 +66,26 @@ namespace proto {
         bool GetVarIntArray(uint32_t number, std::vector<T>& value) {
             bool result = false;
             if (Field* field = GetField(number)) {
-                assert(field->type == Field::FIELD_UINT64);
-                for (uint32_t idx = 0; idx < field->_uint64s.size(); ++idx) {
-                    value.push_back(static_cast<T>(field->_uint64s.at(idx)));
+                if (field->type == Field::FIELD_UINT64) {
+                    for (uint32_t idx = 0; idx < field->_uint64s.size(); ++idx) {
+                        value.push_back(static_cast<T>(field->_uint64s.at(idx)));
+                    }
+                    result = !field->_uint64s.empty();
+                } else if (field->type == Field::FIELD_BYTES) {
+                    // for repeated [packed=true]
+                    for (uint32_t idx = 0; idx < field->_bins.size(); ++idx) {
+                        const binType& bin = field->_bins.at(idx);
+                        const uint8_t* current = bin.first;
+                        size_t remaining = bin.second;
+                        while (remaining) {
+                            const uint64_t varint = ReadVarInt(current, remaining);
+                            value.push_back(static_cast<T>(varint));
+                        }
+                    }
+                    result = !field->_bins.empty();
+                } else {
+                    assert(false);
                 }
-                result = !field->_uint64s.empty();
             }
             return result;
         }
@@ -85,11 +100,12 @@ namespace proto {
         bool GetFloatArray(uint32_t number, std::vector<float>& value);
         bool GetDoubleArray(uint32_t number, std::vector<double>& value);
         bool GetStringArray(uint32_t number, std::vector<std::string>& value);
-        bool GetByteArray(uint32_t number, std::vector<std::pair<uint8_t*, size_t> >& value);
+        bool GetByteArray(uint32_t number, std::vector<binType>& value);
         std::vector<Message*> GetMessageArray(uint32_t number);
     private:
         Field& AddField(uint32_t number, enum Field::FieldType type);
         Field* GetField(uint32_t number);
+        static uint64_t ReadVarInt(const uint8_t*& current, size_t& remaining);
     };
 
 }  // namespace proto
