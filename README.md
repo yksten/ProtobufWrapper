@@ -18,5 +18,5 @@ struExamples items2;
 serialization::PBDecoder decoder(buffer.data(), buffer.size());
 decoder >> items2;
 ```
-暂不支持map，后续支持。改代码也会和struct2x融合，支持struct和json、struct和protobuf的转换。
+暂不支持map，后续支持。代码也会和struct2x融合，支持struct和json、struct和protobuf的转换。
 该代码暂未大量测试验证，转换可能会有问题。
