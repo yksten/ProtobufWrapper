@@ -341,12 +341,14 @@ namespace proto {
     std::vector<Message*> Message::GetMessageArray(uint32_t number) {
         std::vector<Message*> result;
         if (Field* field = GetField(number)) {
-            for (uint32_t idx = 0; idx < field->_bins.size(); ++idx) {
-                const binType& bin = field->_bins.at(idx);
-                Message* msg = new Message;
-                bool bParse = msg->ParseFromBytes(bin.first, bin.second);
-                assert(bParse);
-                field->_msgs.push_back(msg);
+            if (field->_msgs.empty()) {
+                for (uint32_t idx = 0; idx < field->_bins.size(); ++idx) {
+                    const binType& bin = field->_bins.at(idx);
+                    Message* msg = new Message;
+                    bool bParse = msg->ParseFromBytes(bin.first, bin.second);
+                    assert(bParse);
+                    field->_msgs.push_back(msg);
+                }
             }
             return field->_msgs;
         }
