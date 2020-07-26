@@ -52,10 +52,10 @@ namespace google {
                     case FieldDescriptor::TYPE_FIXED64:
                     case FieldDescriptor::TYPE_SFIXED64:
                     case FieldDescriptor::TYPE_SINT64:
-                        sprintf(sz, "%d", field.default_value_int64());
+                        sprintf(sz, "%lld", field.default_value_int64());
                         break;
                     case FieldDescriptor::TYPE_UINT64:
-                        sprintf(sz, "%d", field.default_value_uint64());
+                        sprintf(sz, "%llu", field.default_value_uint64());
                         break;
                     case FieldDescriptor::TYPE_INT32:
                     case FieldDescriptor::TYPE_FIXED32:
@@ -138,7 +138,7 @@ namespace google {
                     //fields
                     printStruct(printer);
                     //4.serialize functions
-                    printSerialize(printer);
+                    //printSerialize(printer);
                     printer.Print("\n#endif\n");
                 }
 
@@ -148,23 +148,23 @@ namespace google {
                         printer.Print("#include<stdint.h>\n");
                     }
                     if (hasString(printer)) {
-                        printer.Print("#include<string>\n");
+                        printer.Print("#include <string>\n");
                     }
                     if (hasVector(printer)) {
-                        printer.Print("#include<vector>\n");
+                        printer.Print("#include <vector>\n");
                     }
                     printer.Print("\n");
                 }
 
                 void codeSerialize::printStruct(google::protobuf::io::Printer& printer)const {
                     if (!_file->package().empty())
-                        printer.Print("namespace $name$\{\n", "name", _file->package());
+                        printer.Print("namespace $name$ \{\n\n", "name", _file->package());
                     uint32_t size = _message_generators.size();
                     for (uint32_t i = 0; i < size; ++i) {
                         const FieldDescriptorArr& messages = _message_generators.at(i);
                         if (messages._vec.empty()) continue;
                         if (i) printer.Print("\n");
-                        printer.Print("struct $struName$\{\n    $struName$\()", "struName", messages._name);
+                        printer.Print("    struct $struName$ \{\n        $struName$\()", "struName", messages._name);
                         std::string fields;
                         uint32_t message_size = messages._vec.size();
                         for (uint32_t idx = 0, flag = 0; idx < message_size; ++idx) {
@@ -182,17 +182,29 @@ namespace google {
                                 }
                                 fields.append("    ");
                                 if (field->is_repeated()) {
-                                    fields.append("std::vector<").append(type2string(*field)).append(">");
+                                    fields.append("    std::vector<").append(type2string(*field)).append(">");
                                 } else {
-                                    fields.append(type2string(*field));
+                                    fields.append("    ").append(type2string(*field));
                                 }
                                 fields.append(" ").append(field->name()).append(";\n");
                             }
                         }
-                        printer.Print(" {}\n$fields$\};\n", "fields", fields);
+
+                        printer.Print(" {}\n$fields$", "fields", fields);
+
+                        printer.Print("\n        template<typename T>\n        void serialize(T& t) {\n            t", "nameSpace", _file->package(), "struName", messages._name);
+                        for (uint32_t idx = 0; idx < message_size; ++idx) {
+                            if (const FieldDescriptor* field = messages._vec.at(idx)) {
+                                char sz[20] = { 0 };
+                                sprintf(sz, "%d", field->number());
+                                printer.Print(" & SERIALIZETYPE($number$, $field$$tag$)", "number", sz, "field", field->name(), "tag", type2tag(*field));
+                            }
+                        }
+                        printer.Print(";\n        }\n    \};\n");
+
                     }
                     if (!_file->package().empty())
-                        printer.Print("}\n");
+                        printer.Print("\n}\n");
                 }
 
 
@@ -249,7 +261,7 @@ namespace google {
                         uint32_t message_size = messages._vec.size();
                         for (uint32_t idx = 0; idx < message_size; ++idx) {
                             if (const FieldDescriptor* field = messages._vec.at(idx)) {
-                                if (field->type() == FieldDescriptor::TYPE_STRING) {
+                                if (field->type() == FieldDescriptor::TYPE_STRING || field->type() == FieldDescriptor::TYPE_BYTES) {
                                     return true;
                                 }
                             }
