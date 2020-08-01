@@ -1,25 +1,27 @@
 #ifndef __SERIALIZATION_H__
 #define __SERIALIZATION_H__
+
+#ifdef _MSC_VER
+#ifdef EXPORTAPI 
+#define EXPORTAPI _declspec(dllimport)
+#else 
+#define EXPORTAPI _declspec(dllexport)
+#endif
+#else
+#define EXPORTAPI
+#endif
+
 #include <stdint.h>
 #include <vector>
 
+#define SERIALIZETYPE_2(num, value)         serialization::makePair(num, value)
+#define SERIALIZETYPE_3(num, value, type)   serialization::makePair(num, value, type)
+
+#define EXPAND(args) args
+#define MAKE_TAG_COUNT(TAG, _3,_2,_1,N,...) TAG##N
+#define SERIALIZETYPE(...) EXPAND(MAKE_TAG_COUNT(SERIALIZETYPE, __VA_ARGS__, _3,_2,_1) (__VA_ARGS__))
+
 namespace serialization {
-
-    class BufferWrapper {
-        std::vector<uint8_t> _buffer;
-        size_t _index;
-        enum { INITIALSIZE = 8 };
-
-    public:
-        explicit BufferWrapper(size_t nSize = INITIALSIZE);
-
-        uint8_t* data() { return &(*_buffer.begin()); }
-        const uint8_t* data() const { return &(*_buffer.begin()); }
-        size_t size() const { return _index; }
-
-        void append(const void* data, size_t len);
-        void swap(BufferWrapper& that);
-    };
 
     enum {
         WT_VARINT             = 0,    // int32,int64,uint32,uint64,sint32,sin64,bool,enum
@@ -38,6 +40,47 @@ namespace serialization {
         TYPE_BYTES   = 4,    // bytes
         TYPE_PACK    = 5,    // repaeted [pack=true]
     };
+
+    class EXPORTAPI BufferWrapper {
+        std::vector<uint8_t> _buffer;
+        size_t _index;
+        enum { INITIALSIZE = 8 };
+
+    public:
+        explicit BufferWrapper(size_t nSize = INITIALSIZE);
+
+        uint8_t* data() { return &(*_buffer.begin()); }
+        const uint8_t* data() const { return &(*_buffer.begin()); }
+        size_t size() const { return _index; }
+
+        void append(const void* data, size_t len);
+        void swap(BufferWrapper& that);
+    };
+
+    template<typename VALUE>
+    class EXPORTAPI serializePair {
+        const uint32_t _num;
+        VALUE& _value;
+        const uint32_t _type;
+    public:
+        serializePair(uint32_t num, VALUE& value) : _num(num), _value(value), _type(TYPE_VARINT) {}
+        serializePair(uint32_t num, VALUE& value, uint32_t type) :_num(num), _value(value), _type(type) {}
+
+        uint32_t type() const { return _type; }
+        uint32_t num() const { return _num; }
+        VALUE& value() { return _value; }
+        const VALUE& value() const { return _value; }
+    };
+
+    template<typename VALUE>
+    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value) {
+        return serializePair<VALUE>(num, value);
+    }
+
+    template<typename VALUE>
+    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value, int32_t type) {
+        return serializePair<VALUE>(num, value, type);
+    }
 
     template <typename T>
     struct isMessage {
@@ -91,40 +134,6 @@ namespace serialization {
         typedef std::vector<T> Type;
     };
 
-    template<typename VALUE>
-    class serializePair {
-        const uint32_t _num;
-        VALUE& _value;
-        const uint32_t _type;
-    public:
-        serializePair(uint32_t num, VALUE& value) : _num(num), _value(value), _type(TYPE_VARINT) {}
-        serializePair(uint32_t num, VALUE& value, uint32_t type) :_num(num),  _value(value), _type(type) {}
-
-        uint32_t type() const { return _type; }
-        uint32_t num() const { return _num; }
-        VALUE& value() { return _value; }
-        const VALUE& value() const { return _value; }
-    };
-
-    template<typename VALUE>
-    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value) {
-        return serializePair<VALUE>(num, value);
-    }
-
-    template<typename VALUE>
-    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value, int32_t type) {
-        return serializePair<VALUE>(num, value, type);
-    }
-
 }
-
-
-#define SERIALIZETYPE_2(num, value)         serialization::makePair(num, value)
-#define SERIALIZETYPE_3(num, value, type)   serialization::makePair(num, value, type)
-
-
-#define EXPAND(args) args
-#define MAKE_TAG_COUNT(TAG, _3,_2,_1,N,...) TAG##N
-#define SERIALIZETYPE(...) EXPAND(MAKE_TAG_COUNT(SERIALIZETYPE, __VA_ARGS__, _3,_2,_1) (__VA_ARGS__))
 
 #endif

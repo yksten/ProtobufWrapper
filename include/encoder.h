@@ -7,7 +7,7 @@
 
 namespace serialization {
 
-    class PBEncoder {
+    class EXPORTAPI PBEncoder {
         typedef void(PBEncoder::*writeValue)(uint64_t);
         static writeValue const functionArray[4];
         template <int isStruct>

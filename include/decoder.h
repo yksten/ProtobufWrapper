@@ -11,7 +11,7 @@ namespace proto {
 
 namespace serialization {
 
-    class PBDecoder {
+    class EXPORTAPI PBDecoder {
         proto::Message* _rootMsg;
         proto::Message* _curMsg;
         bool _bParseRet;
@@ -91,6 +91,23 @@ namespace serialization {
         void setCurMsg(proto::Message* msg) { _curMsg = msg; }
     };
 
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<bool>&);
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<int32_t>&);
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<uint32_t>&);
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<int64_t>&);
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<uint64_t>&);
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<float>&);
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<double>&);
+    template<> EXPORTAPI void PBDecoder::decodeValue(serializePair<std::string>&);
+
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<bool> >&);
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<int32_t> >&);
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<uint32_t> >&);
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<int64_t> >&);
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<uint64_t> >&);
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<float> >&);
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<double> >&);
+    template<> EXPORTAPI void PBDecoder::decodeRepaeted(serializePair<std::vector<std::string> >&);
 }
 
 #endif
