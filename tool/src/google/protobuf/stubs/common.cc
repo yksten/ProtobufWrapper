@@ -41,6 +41,9 @@
 #include <sstream>
 #include <stdio.h>
 #include <vector>
+#ifndef HAVE_PTHREAD
+#define HAVE_PTHREAD
+#endif
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN  // We only need minimal includes
