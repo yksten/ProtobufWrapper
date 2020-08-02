@@ -23,14 +23,14 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<bool>& v) {
+    void PBDecoder::decodeValue(serializeItem<bool>& v) {
         if (!_curMsg) return;
 
         v.value() = (bool)_curMsg->GetVarInt(v.num());
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<int32_t>& v) {
+    void PBDecoder::decodeValue(serializeItem<int32_t>& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
@@ -43,7 +43,7 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<uint32_t>& v) {
+    void PBDecoder::decodeValue(serializeItem<uint32_t>& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_FIXED32) {
@@ -54,7 +54,7 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<int64_t>& v) {
+    void PBDecoder::decodeValue(serializeItem<int64_t>& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
@@ -65,7 +65,7 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<uint64_t>& v) {
+    void PBDecoder::decodeValue(serializeItem<uint64_t>& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
@@ -76,21 +76,21 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<float>& v) {
+    void PBDecoder::decodeValue(serializeItem<float>& v) {
         if (!_curMsg) return;
 
         v.value() = _curMsg->GetFloat(v.num());
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<double>& v) {
+    void PBDecoder::decodeValue(serializeItem<double>& v) {
         if (!_curMsg) return;
 
         v.value() = _curMsg->GetDouble(v.num());
     }
 
     template<>
-    void PBDecoder::decodeValue(serializePair<std::string>& v) {
+    void PBDecoder::decodeValue(serializeItem<std::string>& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_BYTES) {
@@ -103,14 +103,14 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<bool> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<bool> >& v) {
         if (!_curMsg) return;
 
         _curMsg->GetVarIntArray(v.num(), v.value());
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<int32_t> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<int32_t> >& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
@@ -123,7 +123,7 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<uint32_t> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<uint32_t> >& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_FIXED32) {
@@ -134,7 +134,7 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<int64_t> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<int64_t> >& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_SVARINT) {
@@ -145,28 +145,28 @@ namespace serialization {
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<uint64_t> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<uint64_t> >& v) {
         if (!_curMsg) return;
 
         _curMsg->GetVarIntArray(v.num(), v.value());
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<float> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<float> >& v) {
         if (!_curMsg) return;
 
         _curMsg->GetFloatArray(v.num(), v.value());
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<double> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<double> >& v) {
         if (!_curMsg) return;
 
         _curMsg->GetDoubleArray(v.num(), v.value());
     }
 
     template<>
-    void PBDecoder::decodeRepaeted(serializePair<std::vector<std::string> >& v) {
+    void PBDecoder::decodeRepaeted(serializeItem<std::vector<std::string> >& v) {
         if (!_curMsg) return;
 
         if (v.type() == TYPE_BYTES) {

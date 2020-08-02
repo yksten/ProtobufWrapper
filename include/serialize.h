@@ -14,12 +14,12 @@
 #include <stdint.h>
 #include <vector>
 
-#define SERIALIZETYPE_2(num, value)         serialization::makePair(num, value)
-#define SERIALIZETYPE_3(num, value, type)   serialization::makePair(num, value, type)
+#define SERIALIZE_2(num, value)         serialization::makePair(num, value)
+#define SERIALIZE_3(num, value, type)   serialization::makePair(num, value, type)
 
 #define EXPAND(args) args
 #define MAKE_TAG_COUNT(TAG, _3,_2,_1,N,...) TAG##N
-#define SERIALIZETYPE(...) EXPAND(MAKE_TAG_COUNT(SERIALIZETYPE, __VA_ARGS__, _3,_2,_1) (__VA_ARGS__))
+#define SERIALIZE(...) EXPAND(MAKE_TAG_COUNT(SERIALIZE, __VA_ARGS__, _3,_2,_1) (__VA_ARGS__))
 
 namespace serialization {
 
@@ -58,13 +58,13 @@ namespace serialization {
     };
 
     template<typename VALUE>
-    class EXPORTAPI serializePair {
+    class EXPORTAPI serializeItem {
         const uint32_t _num;
         VALUE& _value;
         const uint32_t _type;
     public:
-        serializePair(uint32_t num, VALUE& value) : _num(num), _value(value), _type(TYPE_VARINT) {}
-        serializePair(uint32_t num, VALUE& value, uint32_t type) :_num(num), _value(value), _type(type) {}
+        serializeItem(uint32_t num, VALUE& value) : _num(num), _value(value), _type(TYPE_VARINT) {}
+        serializeItem(uint32_t num, VALUE& value, uint32_t type) :_num(num), _value(value), _type(type) {}
 
         uint32_t type() const { return _type; }
         uint32_t num() const { return _num; }
@@ -73,13 +73,13 @@ namespace serialization {
     };
 
     template<typename VALUE>
-    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value) {
-        return serializePair<VALUE>(num, value);
+    inline serializeItem<VALUE> makePair(uint32_t num, VALUE& value) {
+        return serializeItem<VALUE>(num, value);
     }
 
     template<typename VALUE>
-    inline serializePair<VALUE> makePair(uint32_t num, VALUE& value, int32_t type) {
-        return serializePair<VALUE>(num, value, type);
+    inline serializeItem<VALUE> makePair(uint32_t num, VALUE& value, int32_t type) {
+        return serializeItem<VALUE>(num, value, type);
     }
 
     template <typename T>

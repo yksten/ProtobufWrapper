@@ -197,7 +197,7 @@ namespace google {
                             if (const FieldDescriptor* field = messages._vec.at(idx)) {
                                 char sz[20] = { 0 };
                                 sprintf(sz, "%d", field->number());
-                                printer.Print(" & SERIALIZETYPE($number$, $field$$tag$)", "number", sz, "field", field->name(), "tag", type2tag(*field));
+                                printer.Print(" & SERIALIZE($number$, $field$$tag$)", "number", sz, "field", field->name(), "tag", type2tag(*field));
                             }
                         }
                         printer.Print(";\n        }\n    \};\n");
@@ -220,7 +220,7 @@ namespace google {
                             if (const FieldDescriptor* field = messages._vec.at(idx)) {
                                 char sz[20] = { 0 };
                                 sprintf(sz, "%d", field->number());
-                                printer.Print(" & SERIALIZETYPE($number$, item.$field$$tag$)", "number", sz, "field", field->name(), "tag", type2tag(*field));
+                                printer.Print(" & SERIALIZE($number$, item.$field$$tag$)", "number", sz, "field", field->name(), "tag", type2tag(*field));
                             }
                         }
                         printer.Print(";\n}\n");

@@ -20,13 +20,13 @@ struct struExample {
 
     template<typename T>
     void serialize(T& t) {
-        t & SERIALIZETYPE(1, _id) & SERIALIZETYPE(2, _str) & SERIALIZETYPE(3, _i) & SERIALIZETYPE(4, _num);
+        t & SERIALIZE(1, _id) & SERIALIZE(2, _str) & SERIALIZE(3, _i) & SERIALIZE(4, _num);
     }
 };
 
 template<typename T>
 void serialize(T& t, struExample& item) {
-    t & SERIALIZETYPE(1, item._id) & SERIALIZETYPE(2, item._str) & SERIALIZETYPE(3, item._i) & SERIALIZETYPE(4, item._num);
+    t & SERIALIZE(1, item._id) & SERIALIZE(2, item._str) & SERIALIZE(3, item._i) & SERIALIZE(4, item._num);
 }
 
 struct struExamples {
@@ -35,7 +35,7 @@ struct struExamples {
 
 template<typename T>
 void serialize(T& t, struExamples& items) {
-    t & SERIALIZETYPE(1, items._v, serialization::TYPE_PACK);
+    t & SERIALIZE(1, items._v, serialization::TYPE_PACK);
 }
 
 int main(int argc, char* argv[]) {

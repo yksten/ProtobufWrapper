@@ -42,7 +42,7 @@ namespace serialization {
         }
 
         template<typename T>
-        PBEncoder& operator&(const serializePair<T>& value) {
+        PBEncoder& operator&(const serializeItem<T>& value) {
             if (!isMessage<T>::YES) {
                 uint64_t tag = ((uint64_t)value.num() << 3) | isMessage<T>::WRITE_TYPE;
                 varInt(tag);
@@ -61,7 +61,7 @@ namespace serialization {
         }
 
         template<typename T>
-        PBEncoder& operator&(const serializePair<std::vector<T> >& value) {
+        PBEncoder& operator&(const serializeItem<std::vector<T> >& value) {
             if (!isMessage<T>::YES && value.type() == TYPE_PACK) {
                 return encodeRepaetedPack(value);
             }
@@ -85,7 +85,7 @@ namespace serialization {
         }
 
         template<typename K, typename V>
-        PBEncoder& operator&(const serializePair<std::map<K, V> >& value) {
+        PBEncoder& operator&(const serializeItem<std::map<K, V> >& value) {
             uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
             BufferWrapper bfTemp;
@@ -103,7 +103,7 @@ namespace serialization {
         }
     private:
         template<typename T>
-        PBEncoder& encodeRepaetedPack(const serializePair<std::vector<T> >& value) {
+        PBEncoder& encodeRepaetedPack(const serializeItem<std::vector<T> >& value) {
             uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
             BufferWrapper bfTemp;
