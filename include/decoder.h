@@ -96,6 +96,10 @@ namespace serialization {
             setCurMsg(msg);
             return *this;
         }
+        template<typename V>
+        PBDecoder& operator&(serializeItem<std::map<float, V> > value);
+        template<typename V>
+        PBDecoder& operator&(serializeItem<std::map<double, V> > value);
     private:
         proto::Message* getMessage(int32_t number);
         std::vector<proto::Message*> getMessageArray(int32_t number);

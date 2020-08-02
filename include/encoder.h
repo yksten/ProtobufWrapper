@@ -103,6 +103,10 @@ namespace serialization {
             }
             return *this;
         }
+        template<typename V>
+        PBEncoder& operator&(const serializeItem<std::map<float, V> >& value);
+        template<typename V>
+        PBEncoder& operator&(const serializeItem<std::map<double, V> >& value);
     private:
         template<typename T>
         PBEncoder& encodeRepaetedPack(const serializeItem<std::vector<T> >& value) {
