@@ -54,9 +54,9 @@ namespace serialization {
             BufferWrapper bfTemp;
             bfTemp.swap(_buffer);
             valueEncoder<isMessage<T>::YES>::encode(value.value(), value.type(), *this);
-            varInt(_buffer.size());
-            bfTemp.append(_buffer.data(), _buffer.size());
             _buffer.swap(bfTemp);
+            varInt(bfTemp.size());
+            _buffer.append(bfTemp.data(), bfTemp.size());
             return *this;
         }
 
@@ -87,24 +87,26 @@ namespace serialization {
         template<typename K, typename V>
         PBEncoder& operator&(const serializeItem<std::map<K, V> >& value) {
             uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
-            varInt(tag);
-            BufferWrapper bfTemp;
-            bfTemp.swap(_buffer);
             for (std::map<K, V>::const_iterator it = value.value().begin(); it != value.value().end(); ++it) {
-                varInt(((uint64_t)1 << 3) | isMessage<K>::WRITE_TYPE);
-                encodeValue(it->first, TYPE_VARINT);
-                varInt(((uint64_t)2 << 3) | isMessage<V>::WRITE_TYPE);
-                valueEncoder<isMessage<V>::YES>::encode(it->second, isMessage<V>::WRITE_TYPE, *this);
+                varInt(tag);
+                BufferWrapper bfTemp;
+                bfTemp.swap(_buffer);
+                do {
+                    //operator&(serializeItem<K>(1, *const_cast<K*>(&it->first)));
+                    varInt(((uint64_t)1 << 3) | isMessage<K>::WRITE_TYPE);
+                    encodeValue(it->first, TYPE_VARINT);
+                    operator&(serializeItem<V>(2, *const_cast<V*>(&it->second)));
+                } while (0);
+                _buffer.swap(bfTemp);
+                varInt(bfTemp.size());
+                _buffer.append(bfTemp.data(), bfTemp.size());
             }
-            _buffer.swap(bfTemp);
-            varInt(bfTemp.size());
-            _buffer.append(bfTemp.data(), bfTemp.size());
             return *this;
         }
     private:
         template<typename T>
         PBEncoder& encodeRepaetedPack(const serializeItem<std::vector<T> >& value) {
-            uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
+            uint64_t tag = ((uint64_t)value.num() << 3) | value.type();
             varInt(tag);
             BufferWrapper bfTemp;
             bfTemp.swap(_buffer);

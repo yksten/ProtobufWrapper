@@ -31,11 +31,13 @@ void serialize(T& t, struExample& item) {
 
 struct struExamples {
     std::vector<struExample> _v;
+    std::map<int, struExample> _m;
 };
 
 template<typename T>
 void serialize(T& t, struExamples& items) {
-    t & SERIALIZE(1, items._v, serialization::TYPE_PACK);
+    t & SERIALIZE(1, items._v);
+    t & SERIALIZE(2, items._m);
 }
 
 int main(int argc, char* argv[]) {
@@ -65,11 +67,13 @@ int main(int argc, char* argv[]) {
         item._num = 19.8f;
         struExamples items;
         items._v.push_back(item);
+        items._m[1]= item;
         item._id = 2;
         item._str = "afexample";
         item._i = 5.7f;
         item._num = 89.8f;
         items._v.push_back(item);
+        items._m[2] = item;
 
         serialization::BufferWrapper buffer;
         serialization::PBEncoder encoder(buffer);

@@ -83,17 +83,17 @@ namespace serialization {
         template<typename K, typename V>
         PBDecoder& operator&(serializeItem<std::map<K, V> > value) {
             if (!value.value().empty()) value.value().clear();
-            proto::Message* msg = decoder.getCurMsg();
-            std::vector<proto::Message*> repaetedMsg = decoder.getMessageArray(out.num());
+            proto::Message* msg = getCurMsg();
+            std::vector<proto::Message*> repaetedMsg = getMessageArray(value.num());
             for (uint32_t idx = 0; idx < repaetedMsg.size(); ++idx) {
-                decoder.setCurMsg(repaetedMsg.at(idx));
+                setCurMsg(repaetedMsg.at(idx));
                 typename K key = typename K();
-                decoder.operator>>(serializeItem<V>(1, key));
+                decodeValue(serializeItem<K>(1, key));
                 typename V v = typename V();
-                decoder.operator>>(serializeItem<V>(2, v));
-                out.value().insert(std::pair<K, V>(key, v));
+                valueDecoder<isMessage<V>::YES>::decode(serializeItem<V>(2, v), *this);
+                value.value().insert(std::pair<K, V>(key, v));
             }
-            decoder.setCurMsg(msg);
+            setCurMsg(msg);
             return *this;
         }
     private:
