@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string>
 #include <vector>
+#include <map>
 #include "serialize.h"
 
 namespace proto {
@@ -74,7 +75,25 @@ namespace serialization {
 
         template<typename T>
         PBDecoder& operator&(serializePair<std::vector<T> > value) {
+            if (!value.value().empty()) value.value().clear();
             valueDecoder<isMessage<T>::YES>::decodeRepaeted(value, *this);
+            return *this;
+        }
+
+        template<typename K, typename V>
+        PBDecoder& operator&(serializePair<std::map<K, V> > value) {
+            if (!value.value().empty()) value.value().clear();
+            proto::Message* msg = decoder.getCurMsg();
+            std::vector<proto::Message*> repaetedMsg = decoder.getMessageArray(out.num());
+            for (uint32_t idx = 0; idx < repaetedMsg.size(); ++idx) {
+                decoder.setCurMsg(repaetedMsg.at(idx));
+                typename K key = typename K();
+                decoder.operator>>(serializePair<V>(1, key));
+                typename V v = typename V();
+                decoder.operator>>(serializePair<V>(2, v));
+                out.value().insert(std::pair<K, V>(key, v));
+            }
+            decoder.setCurMsg(msg);
             return *this;
         }
     private:

@@ -2,6 +2,7 @@
 #define __PROTOBUF_ENCODER_H__
 #include <string>
 #include <vector>
+#include <map>
 #include "serialize.h"
 
 
@@ -41,18 +42,18 @@ namespace serialization {
         }
 
         template<typename T>
-        PBEncoder& operator&(const serializePair<T>& pair) {
+        PBEncoder& operator&(const serializePair<T>& value) {
             if (!isMessage<T>::YES) {
-                uint64_t tag = ((uint64_t)pair.num() << 3) | isMessage<T>::WRITE_TYPE;
+                uint64_t tag = ((uint64_t)value.num() << 3) | isMessage<T>::WRITE_TYPE;
                 varInt(tag);
-                valueEncoder<isMessage<T>::YES>::encode(pair.value(), pair.type(), *this);
+                valueEncoder<isMessage<T>::YES>::encode(value.value(), value.type(), *this);
                 return *this;
             }
-            uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
+            uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
             BufferWrapper bfTemp;
             bfTemp.swap(_buffer);
-            valueEncoder<isMessage<T>::YES>::encode(pair.value(), pair.type(), *this);
+            valueEncoder<isMessage<T>::YES>::encode(value.value(), value.type(), *this);
             varInt(_buffer.size());
             bfTemp.append(_buffer.data(), _buffer.size());
             _buffer.swap(bfTemp);
@@ -60,38 +61,56 @@ namespace serialization {
         }
 
         template<typename T>
-        PBEncoder& operator&(const serializePair<std::vector<T> >& pair) {
-            if (!isMessage<T>::YES && pair.type() == TYPE_PACK) {
-                return encodeRepaetedPack(pair);
+        PBEncoder& operator&(const serializePair<std::vector<T> >& value) {
+            if (!isMessage<T>::YES && value.type() == TYPE_PACK) {
+                return encodeRepaetedPack(value);
             }
 
-            uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
-            uint32_t size = (uint32_t)pair.value().size();
+            uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
+            uint32_t size = (uint32_t)value.value().size();
             for (uint32_t i = 0; i < size; ++i) {
                 varInt(tag);
                 if (isMessage<T>::YES) {
                     BufferWrapper bfTemp;
                     bfTemp.swap(_buffer);
-                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
+                    valueEncoder<isMessage<T>::YES>::encode(value.value().at(i), value.type(), *this);
                     _buffer.swap(bfTemp);
                     varInt(bfTemp.size());
                     _buffer.append(bfTemp.data(), bfTemp.size());
                 } else {
-                    valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
+                    valueEncoder<isMessage<T>::YES>::encode(value.value().at(i), value.type(), *this);
                 }
             }
             return *this;
         }
-    private:
-        template<typename T>
-        PBEncoder& encodeRepaetedPack(const serializePair<std::vector<T> >& pair) {
-            uint64_t tag = ((uint64_t)pair.num() << 3) | WT_LENGTH_DELIMITED;
+
+        template<typename K, typename V>
+        PBEncoder& operator&(const serializePair<std::map<K, V> >& value) {
+            uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
             varInt(tag);
             BufferWrapper bfTemp;
             bfTemp.swap(_buffer);
-            uint32_t size = (uint32_t)pair.value().size();
+            for (std::map<K, V>::const_iterator it = value.value().begin(); it != value.value().end(); ++it) {
+                varInt(((uint64_t)1 << 3) | isMessage<K>::WRITE_TYPE);
+                encodeValue(it->first, TYPE_VARINT);
+                varInt(((uint64_t)2 << 3) | isMessage<V>::WRITE_TYPE);
+                valueEncoder<isMessage<V>::YES>::encode(it->second, isMessage<V>::WRITE_TYPE, *this);
+            }
+            _buffer.swap(bfTemp);
+            varInt(bfTemp.size());
+            _buffer.append(bfTemp.data(), bfTemp.size());
+            return *this;
+        }
+    private:
+        template<typename T>
+        PBEncoder& encodeRepaetedPack(const serializePair<std::vector<T> >& value) {
+            uint64_t tag = ((uint64_t)value.num() << 3) | WT_LENGTH_DELIMITED;
+            varInt(tag);
+            BufferWrapper bfTemp;
+            bfTemp.swap(_buffer);
+            uint32_t size = (uint32_t)value.value().size();
             for (uint32_t i = 0; i < size; ++i) {
-                valueEncoder<isMessage<T>::YES>::encode(pair.value().at(i), pair.type(), *this);
+                valueEncoder<isMessage<T>::YES>::encode(value.value().at(i), value.type(), *this);
             }
             _buffer.swap(bfTemp);
             varInt(bfTemp.size());
