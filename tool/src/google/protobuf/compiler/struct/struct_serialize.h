@@ -36,6 +36,7 @@ namespace google {
                     bool hasInt(google::protobuf::io::Printer& printer)const;
                     bool hasString(google::protobuf::io::Printer& printer)const;
                     bool hasVector(google::protobuf::io::Printer& printer)const;
+                    bool hasMap(google::protobuf::io::Printer& printer)const;
                 };
 
             }

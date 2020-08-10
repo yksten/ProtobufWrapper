@@ -38,6 +38,16 @@ namespace google {
                     }
                 }
 
+                const char* map2string(const FieldDescriptor& field) {
+                    static std::string strRet;
+                    strRet.clear();
+                    assert(field.message_type()->field_count() == 2);
+                    const FieldDescriptor* key = field.message_type()->field(0);
+                    const FieldDescriptor* value = field.message_type()->field(1);
+                    strRet.append(type2string(*key)).append(", ").append(type2string(*value));
+                    return strRet.c_str();
+                }
+
                 const char* type2value(const FieldDescriptor& field) {
                     static char sz[64] = { 0 };
                     memset(sz, 0, sizeof(sz));
@@ -153,6 +163,9 @@ namespace google {
                     if (hasVector(printer)) {
                         printer.Print("#include <vector>\n");
                     }
+                    if (hasMap(printer)) {
+                        printer.Print("#include <map>\n");
+                    }
                     printer.Print("\n");
                 }
 
@@ -162,7 +175,7 @@ namespace google {
                     uint32_t size = _message_generators.size();
                     for (uint32_t i = 0; i < size; ++i) {
                         const FieldDescriptorArr& messages = _message_generators.at(i);
-                        if (messages._vec.empty()) continue;
+                        if (messages._vec.empty() || messages._name.find("Entry_DoNotUse") != std::string::npos) continue;
                         if (i) printer.Print("\n");
                         printer.Print("    struct $struName$ \{\n        $struName$\()", "struName", messages._name);
                         std::string fields;
@@ -181,7 +194,9 @@ namespace google {
                                     flag = 1;
                                 }
                                 fields.append("    ");
-                                if (field->is_repeated()) {
+                                if (field->is_map()) {
+                                    fields.append("    std::map<").append(map2string(*field)).append(">");
+                                } else if (field->is_repeated()) {
                                     fields.append("    std::vector<").append(type2string(*field)).append(">");
                                 } else {
                                     fields.append("    ").append(type2string(*field));
@@ -278,6 +293,21 @@ namespace google {
                         for (uint32_t idx = 0; idx < message_size; ++idx) {
                             if (const FieldDescriptor* field = messages._vec.at(idx)) {
                                 if (field->is_repeated()) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                }
+                bool codeSerialize::hasMap(google::protobuf::io::Printer& printer)const {
+                    uint32_t size = _message_generators.size();
+                    for (uint32_t i = 0; i < size; ++i) {
+                        const FieldDescriptorArr& messages = _message_generators.at(i);
+                        uint32_t message_size = messages._vec.size();
+                        for (uint32_t idx = 0; idx < message_size; ++idx) {
+                            if (const FieldDescriptor* field = messages._vec.at(idx)) {
+                                if (field->is_map()) {
                                     return true;
                                 }
                             }
