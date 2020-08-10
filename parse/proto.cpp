@@ -338,8 +338,7 @@ namespace proto {
         return result;
     }
 
-    std::vector<Message*> Message::GetMessageArray(uint32_t number) {
-        std::vector<Message*> result;
+    std::vector<Message*>* Message::GetMessageArray(uint32_t number) {
         if (Field* field = GetField(number)) {
             if (field->_msgs.empty()) {
                 for (uint32_t idx = 0; idx < field->_bins.size(); ++idx) {
@@ -350,9 +349,9 @@ namespace proto {
                     field->_msgs.push_back(msg);
                 }
             }
-            return field->_msgs;
+            return &field->_msgs;
         }
-        return result;
+        return NULL;
     }
 
 

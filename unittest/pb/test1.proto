@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package test;
+
+message struExample {
+    uint32 id = 1;
+    string str = 2;
+    float f = 3;
+    double db = 4;
+}
+
+message struExamples {
+    repeated struExample v = 1;
+    map<int32, struExample> m = 2;
+};

@@ -18,7 +18,7 @@ namespace serialization {
         return _curMsg->GetMessage(number);
     }
 
-    std::vector<proto::Message*> PBDecoder::getMessageArray(int32_t number) {
+    std::vector<proto::Message*>* PBDecoder::getMessageArray(int32_t number) {
         return _curMsg->GetMessageArray(number);
     }
 

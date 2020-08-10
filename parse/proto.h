@@ -101,7 +101,7 @@ namespace proto {
         bool GetDoubleArray(uint32_t number, std::vector<double>& value);
         bool GetStringArray(uint32_t number, std::vector<std::string>& value);
         bool GetByteArray(uint32_t number, std::vector<binType>& value);
-        std::vector<Message*> GetMessageArray(uint32_t number);
+        std::vector<Message*>* GetMessageArray(uint32_t number);
     private:
         Field& AddField(uint32_t number, enum Field::FieldType type);
         Field* GetField(uint32_t number);

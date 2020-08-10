@@ -20,11 +20,11 @@ SET(SRC "./include/serialize.h" "./include/encoder.h" "./include/decoder.h" "./s
 SOURCE_GROUP(src FILES ${SRC})
 
 LIST(REMOVE_ITEM DIR_SRCS "./tester/main.cpp")
-IF (WIN32)
+IF (MSVC)
     ADD_LIBRARY(PBWrapper SHARED ${PARSE} ${SRC} ${DIR_SRCS}) 
 ELSE ()
     ADD_LIBRARY(PBWrapper ${PARSE} ${SRC} ${DIR_SRCS}) 
-ENDIF ()
+ENDIF (MSVC)
 
 
 SET(TESTER "./tester/main.cpp")

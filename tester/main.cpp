@@ -24,21 +24,26 @@ struct struExample {
     }
 };
 
-template<typename T>
-void serialize(T& t, struExample& item) {
-    t & SERIALIZE(1, item._id) & SERIALIZE(2, item._str) & SERIALIZE(3, item._i) & SERIALIZE(4, item._num);
-}
+//template<typename T>
+//void serialize(T& t, struExample& item) {
+//    t & SERIALIZE(1, item._id) & SERIALIZE(2, item._str) & SERIALIZE(3, item._i) & SERIALIZE(4, item._num);
+//}
 
 struct struExamples {
     std::vector<struExample> _v;
     std::map<int, struExample> _m;
+
+    template<typename T>
+    void serialize(T& t) {
+        t & SERIALIZE(1, _v) & SERIALIZE(2, _m);
+    }
 };
 
-template<typename T>
-void serialize(T& t, struExamples& items) {
-    t & SERIALIZE(1, items._v);
-    t & SERIALIZE(2, items._m);
-}
+//template<typename T>
+//void serialize(T& t, struExamples& items) {
+//    t & SERIALIZE(1, items._v);
+//    t & SERIALIZE(2, items._m);
+//}
 
 int main(int argc, char* argv[]) {
     if (argc > 1)
