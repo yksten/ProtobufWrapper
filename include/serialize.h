@@ -88,13 +88,15 @@ namespace serialization {
 
     namespace internal {
 
-        enum {
-            WT_VARINT = 0,    // int32,int64,uint32,uint64,sint32,sin64,bool,enum
-            WT_64BIT = 1,    // fixed64,sfixed64,double
-            WT_LENGTH_DELIMITED = 2,    // string,bytes,embedded messages,packed repeated fields
-            WT_START_GROUP = 3,    // Groups(deprecated)
-            WT_END_GROUP = 4,    // Groups(deprecated)
-            WT_32BIT = 5,    // fixed32,sfixed32,float
+        // These are defined in:
+        // https://developers.google.com/protocol-buffers/docs/encoding
+        enum WireType {
+            WIRETYPE_VARINT = 0,                // int32,int64,uint32,uint64,sint32,sin64,bool,enum
+            WIRETYPE_64BIT = 1,                 // fixed64,sfixed64,double
+            WIRETYPE_LENGTH_DELIMITED = 2,      // string,bytes,embedded messages,packed repeated fields
+            WIRETYPE_GROUP_START = 3,           // Groups(deprecated)
+            WIRETYPE_GROUP_END = 4,             // Groups(deprecated)
+            WIRETYPE_32BIT = 5,                 // fixed32,sfixed32,float
         };
 
         template <typename T>
@@ -104,22 +106,22 @@ namespace serialization {
             template<typename C> static int32_t check(...);
         public:
             enum { YES = (sizeof(check<T>(static_cast<T*>(0))) == sizeof(char)) };
-            enum { WRITE_TYPE = (YES == 0) ? WT_VARINT : WT_LENGTH_DELIMITED };
+            enum { WRITE_TYPE = (YES == 0) ? WIRETYPE_VARINT : WIRETYPE_LENGTH_DELIMITED };
         };
 
         template<>
         struct isMessage<std::string> {
-            enum { YES = 0, WRITE_TYPE = WT_LENGTH_DELIMITED };
+            enum { YES = 0, WRITE_TYPE = WIRETYPE_LENGTH_DELIMITED };
         };
 
         template<>
         struct isMessage<float> {
-            enum { YES = 0, WRITE_TYPE = WT_32BIT };
+            enum { YES = 0, WRITE_TYPE = WIRETYPE_32BIT };
         };
 
         template<>
         struct isMessage<double> {
-            enum { YES = 0, WRITE_TYPE = WT_64BIT };
+            enum { YES = 0, WRITE_TYPE = WIRETYPE_64BIT };
         };
 
         struct access {

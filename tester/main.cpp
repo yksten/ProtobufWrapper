@@ -84,7 +84,8 @@ int main(int argc, char* argv[]) {
 
         struExamples items2;
         serialization::PBDecoder decoder(buffer.data(), buffer.size());
-        decoder >> items2;
+        bool b = decoder >> items2;
+        assert(b);
     }
 
     return 0;
