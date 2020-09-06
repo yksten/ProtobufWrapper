@@ -8,6 +8,21 @@
 namespace serialization {
 
     class EXPORTAPI PBEncoder {
+        class calculateFieldHelper {
+            BufferWrapper& _buff;
+            size_t& _nSize;
+            std::pair<bool, size_t> _customField;
+        public:
+            calculateFieldHelper(BufferWrapper& buff, size_t& nSize)
+                :_buff(buff), _nSize(nSize), _customField(_buff.getCustomField()) {
+                _buff.startCalculateSize();
+            }
+            ~calculateFieldHelper() {
+                _nSize = _buff.getCustomField().second;
+                _buff.setCustomField(_customField);
+            }
+        };
+
         typedef void(PBEncoder::*writeValue)(uint64_t);
         static writeValue const functionArray[4];
         BufferWrapper& _buffer;
@@ -27,20 +42,17 @@ namespace serialization {
 
         template<typename T>
         PBEncoder& operator&(const serializeItem<T>& value) {
-            if (!internal::isMessage<T>::YES) {
-                uint64_t tag = ((uint64_t)value.num << 3) | internal::isMessage<T>::WRITE_TYPE;
-                varInt(tag);
-                encodeValue(value.value, value.type);
-                return *this;
-            }
-            uint64_t tag = ((uint64_t)value.num << 3) | internal::WT_LENGTH_DELIMITED;
+            uint64_t tag = ((uint64_t)value.num << 3) | internal::isMessage<T>::WRITE_TYPE;
             varInt(tag);
-            BufferWrapper bfTemp;
-            bfTemp.swap(_buffer);
+            if (internal::isMessage<T>::YES) {
+                size_t nCustomFieldSize = 0;
+                do {
+                    calculateFieldHelper h(_buffer, nCustomFieldSize);
+                    encodeValue(value.value, value.type);
+                } while (0);
+                varInt(nCustomFieldSize);
+            }
             encodeValue(value.value, value.type);
-            _buffer.swap(bfTemp);
-            varInt(bfTemp.size());
-            _buffer.append(bfTemp.data(), bfTemp.size());
             return *this;
         }
 
@@ -55,15 +67,14 @@ namespace serialization {
             for (uint32_t i = 0; i < size; ++i) {
                 varInt(tag);
                 if (internal::isMessage<T>::YES) {
-                    BufferWrapper bfTemp;
-                    bfTemp.swap(_buffer);
-                    encodeValue(value.value.at(i), value.type);
-                    _buffer.swap(bfTemp);
-                    varInt(bfTemp.size());
-                    _buffer.append(bfTemp.data(), bfTemp.size());
-                } else {
-                    encodeValue(value.value.at(i), value.type);
+                    size_t nCustomFieldSize = 0;
+                    do {
+                        calculateFieldHelper h(_buffer, nCustomFieldSize);
+                        encodeValue(value.value.at(i), value.type);
+                    } while (0);
+                    varInt(nCustomFieldSize);
                 }
+                encodeValue(value.value.at(i), value.type);
             }
             return *this;
         }
@@ -73,16 +84,19 @@ namespace serialization {
             uint64_t tag = ((uint64_t)value.num << 3) | internal::WT_LENGTH_DELIMITED;
             for (std::map<K, V>::const_iterator it = value.value.begin(); it != value.value.end(); ++it) {
                 varInt(tag);
-                BufferWrapper bfTemp;
-                bfTemp.swap(_buffer);
+
+                size_t nCustomFieldSize = 0;
                 do {
+                    calculateFieldHelper h(_buffer, nCustomFieldSize);
                     varInt(((uint64_t)1 << 3) | internal::isMessage<K>::WRITE_TYPE);
                     encodeValue(it->first, TYPE_VARINT);
                     operator&(SERIALIZE(2, *const_cast<V*>(&it->second)));
                 } while (0);
-                _buffer.swap(bfTemp);
-                varInt(bfTemp.size());
-                _buffer.append(bfTemp.data(), bfTemp.size());
+                varInt(nCustomFieldSize);
+
+                varInt(((uint64_t)1 << 3) | internal::isMessage<K>::WRITE_TYPE);
+                encodeValue(it->first, TYPE_VARINT);
+                operator&(SERIALIZE(2, *const_cast<V*>(&it->second)));
             }
             return *this;
         }
@@ -91,17 +105,12 @@ namespace serialization {
     private:
         template<typename T>
         PBEncoder& encodeRepaetedPack(const serializeItem<std::vector<T> >& value) {
-            uint64_t tag = ((uint64_t)value.num << 3) | value.type;
+            uint64_t tag = ((uint64_t)value.num << 3) | internal::WT_LENGTH_DELIMITED;
             varInt(tag);
-            BufferWrapper bfTemp;
-            bfTemp.swap(_buffer);
             uint32_t size = (uint32_t)value.value.size();
             for (uint32_t i = 0; i < size; ++i) {
                 encodeValue(value.value.at(i), serialization::TYPE_VARINT);
             }
-            _buffer.swap(bfTemp);
-            varInt(bfTemp.size());
-            _buffer.append(bfTemp.data(), bfTemp.size());
             return *this;
         }
         template<typename T>
