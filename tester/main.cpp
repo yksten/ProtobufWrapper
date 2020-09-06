@@ -4,8 +4,6 @@
 #include "decoder.h"
 #include "encoder.h"
 
-#include "parse/proto.h"
-
 #ifdef _MSC_VER
 #include <io.h>
 #endif

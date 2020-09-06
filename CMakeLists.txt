@@ -13,17 +13,14 @@ SET(CMAKE_DEBUG_POSTFIX d)
 INCLUDE_DIRECTORIES(./ ./include/)
 AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 
-SET(PARSE "./parse/proto.h" "./parse/proto.cpp")
-SOURCE_GROUP(parse FILES ${PARSE})
-
 SET(SRC "./include/serialize.h" "./include/encoder.h" "./include/decoder.h" "./src/serialize.cpp" "./src/encoder.cpp" "./src/decoder.cpp")
 SOURCE_GROUP(src FILES ${SRC})
 
 LIST(REMOVE_ITEM DIR_SRCS "./tester/main.cpp")
 IF (MSVC)
-    ADD_LIBRARY(PBWrapper SHARED ${PARSE} ${SRC} ${DIR_SRCS}) 
+    ADD_LIBRARY(PBWrapper SHARED ${SRC} ${DIR_SRCS}) 
 ELSE ()
-    ADD_LIBRARY(PBWrapper ${PARSE} ${SRC} ${DIR_SRCS}) 
+    ADD_LIBRARY(PBWrapper ${SRC} ${DIR_SRCS}) 
 ENDIF (MSVC)
 
 
