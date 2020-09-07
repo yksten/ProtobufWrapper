@@ -83,7 +83,7 @@ namespace serialization {
         template<typename K, typename V>
         PBEncoder& operator&(const serializeItem<std::map<K, V> >& value) {
             uint64_t tag = ((uint64_t)value.num << 3) | internal::WIRETYPE_LENGTH_DELIMITED;
-            for (std::map<K, V>::const_iterator it = value.value.begin(); it != value.value.end(); ++it) {
+            for (typename std::map<K, V>::const_iterator it = value.value.begin(); it != value.value.end(); ++it) {
                 varInt(tag);
 
                 size_t nCustomFieldSize = 0;
