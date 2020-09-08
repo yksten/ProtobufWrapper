@@ -207,7 +207,7 @@ namespace serialization {
         template<typename T>
         static bool convertCustomArray(std::vector<T>& value, const proto::bin_type& cValue, const uint32_t type, bool* pHas) {
             serialization::PBDecoder decoder(cValue.first, cValue.second);
-            typename T temp;
+            T temp = T();
             if (!decoder.operator>>(temp))
                 return false;
             value.push_back(temp);
