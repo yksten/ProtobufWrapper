@@ -99,41 +99,51 @@ namespace serialization {
             WIRETYPE_32BIT = 5,                 // fixed32,sfixed32,float
         };
 
-        template <typename T>
-        struct isMessage {
-        private:
-            template < typename C, C&(C::*)(const C&) = &C::operator=> static char check(C*);
-            template<typename C> static int32_t check(...);
+        template<typename From, typename To>
+        class is_convertible {
+            typedef char one;
+            typedef int  two;
+
+            template<typename To1>
+            static To1 create();
+
+            template<typename To1>
+            static one test(To1);
+
+            template<typename>
+            static two test(...);
         public:
-            enum { YES = (sizeof(check<T>(static_cast<T*>(0))) == sizeof(char)) };
-            enum { WRITE_TYPE = (YES == 0) ? WIRETYPE_VARINT : WIRETYPE_LENGTH_DELIMITED };
+            static const bool value = (sizeof(test<To>(create<From>())) == sizeof(one));
         };
 
-        template<>
-        struct isMessage<std::string> {
-            enum { YES = 0, WRITE_TYPE = WIRETYPE_LENGTH_DELIMITED };
+        template <class T> struct is_integral { static const bool value = false; };
+        template <> struct is_integral<bool> { static const bool value = true; };
+        template <> struct is_integral<int32_t> { static const bool value = true; };
+        template <> struct is_integral<uint32_t> { static const bool value = true; };
+        template <> struct is_integral<int64_t> { static const bool value = true; };
+        template <> struct is_integral<uint64_t> { static const bool value = true; };
+        template <> struct is_integral<float> { static const bool value = true; };
+        template <> struct is_integral<double> { static const bool value = true; };
+
+        template <class T>
+        struct is_enum {
+            static const bool value = is_convertible<T, int32_t>::value & !is_integral<T>::value;
         };
 
-        template<>
-        struct isMessage<float> {
-            enum { YES = 0, WRITE_TYPE = WIRETYPE_32BIT };
-        };
-
-        template<>
-        struct isMessage<double> {
-            enum { YES = 0, WRITE_TYPE = WIRETYPE_64BIT };
-        };
-
-        struct access {
-            template<class T, class C>
-            static void serialize(T& t, C& c) {
-                c.serialize(t);
-            }
-        };
+        template <typename T, bool isEnum = is_enum<T>::value> struct isMessage { enum { YES = 1, WRITE_TYPE = WIRETYPE_LENGTH_DELIMITED }; };
+        template <typename T> struct isMessage<T, true> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
+        template<> struct isMessage<std::string> { enum { YES = 0, WRITE_TYPE = WIRETYPE_LENGTH_DELIMITED }; };
+        template<> struct isMessage<bool> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
+        template<> struct isMessage<int32_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
+        template<> struct isMessage<uint32_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
+        template<> struct isMessage<int64_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
+        template<> struct isMessage<uint64_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
+        template<> struct isMessage<float> { enum { YES = 0, WRITE_TYPE = WIRETYPE_32BIT }; };
+        template<> struct isMessage<double> { enum { YES = 0, WRITE_TYPE = WIRETYPE_64BIT }; };
 
         template<class T, class C>
         inline void serialize(T& t, C& c) {
-            access::serialize(t, c);
+            c.serialize(t);
         }
 
         template<class T, class C>
@@ -141,14 +151,22 @@ namespace serialization {
             serialize(t, c);
         }
 
-        template<typename T>
+        template<typename T, bool isEnum = is_enum<T>::value>
         struct TypeTraits {
             typedef T Type;
+            static bool isVector() { return false; }
+        };
+
+        template<typename T, bool isEnum>
+        struct TypeTraits<std::vector<T>, isEnum> {
+            typedef std::vector<T> Type;
+            static bool isVector() { return true; }
         };
 
         template<typename T>
-        struct TypeTraits<std::vector<T> > {
-            typedef std::vector<T> Type;
+        struct TypeTraits<T, true> {
+            typedef int32_t Type;
+            static bool isVector() { return false; }
         };
 
     }

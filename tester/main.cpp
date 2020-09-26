@@ -9,6 +9,11 @@
 #endif
 #include <fstream>
 
+enum EnumType {
+    ET1,
+    ET2,
+    ET3,
+};
 
 struct struExample {
     uint32_t _id;
@@ -64,14 +69,14 @@ int main(int argc, char* argv[]) {
 
     {
         struExample item;
-        item._id = 1;
+        item._id = ET2;
         item._str = "example";
         item._i = 9.7f;
         item._num = 19.8f;
         struExamples items;
         items._v.push_back(item);
         items._m[1]= item;
-        item._id = 2;
+        item._id = ET3;
         item._str = "afexample";
         item._i = 5.7f;
         item._num = 89.8f;
