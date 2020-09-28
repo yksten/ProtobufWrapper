@@ -92,7 +92,7 @@ namespace serialization {
         template<typename T>
         PBDecoder& operator&(serializeItem<T> value) {
             if (_bParseResult)
-                _bParseResult = decodeValue(*(typename serializeItem<internal::TypeTraits<T>::Type>*)(&value));
+                _bParseResult = decodeValue(*(serializeItem<typename internal::TypeTraits<T>::Type>*)(&value));
             return *this;
         }
 
@@ -100,7 +100,7 @@ namespace serialization {
         PBDecoder& operator&(serializeItem<std::vector<T> > value) {
             if (!value.value.empty()) value.value.clear();
             if (_bParseResult)
-                _bParseResult = decodeRepaeted(*(typename serializeItem<std::vector<internal::TypeTraits<T>::Type> >*)(&value));
+                _bParseResult = decodeRepaeted(*(serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
             return *this;
         }
 
@@ -220,11 +220,11 @@ namespace serialization {
             serialization::PBDecoder decoder(cValue.first, cValue.second);
             K key = K();
             serialization::serializeItem<K> kItem = SERIALIZE(1, key);
-            if (!decoder.decodeValue(*(typename serializeItem<internal::TypeTraits<K>::Type>*)(&kItem)))
+            if (!decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<K>::Type>*)(&kItem)))
                 return false;
             V v = V();
             serialization::serializeItem<V> vItem = SERIALIZE(2, v);
-            if (!decoder.decodeValue(*(typename serializeItem<internal::TypeTraits<V>::Type>*)(&vItem)))
+            if (!decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem)))
                 return false;
             if (!decoder.ParseFromBytes())
                 return false;
