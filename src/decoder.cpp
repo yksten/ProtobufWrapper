@@ -51,8 +51,21 @@ namespace proto {
 
     /*=====================================message====================================*/
 
-    Message::Message(const uint8_t* sz, uint32_t size) :_sz(sz), _size(size) {
+    Message::Message() :_struct(NULL) {
     }
+
+	void Message::setStruct(void* pStruct) {
+		_struct = (uint8_t*)pStruct;
+	}
+
+	bool Message::call(uint32_t field_number, const void* cValue) const {
+		std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
+		if (it != _functionSet.end()) {
+			it->second(_struct + it->second.offset(), cValue);
+			return true;
+		}
+		return false;
+	}
 
     bool Message::ReadVarInt(const uint8_t*& current, size_t& remaining, uint64_t& result) {
         bool keep_going = false;
@@ -68,9 +81,9 @@ namespace proto {
         return true;
     }
 
-    bool Message::ParseFromBytes() {
-        const uint8_t* current = _sz;
-        size_t remaining = _size;
+    bool Message::ParseFromBytes(const uint8_t* sz, uint32_t size) {
+        const uint8_t* current = sz;
+        size_t remaining = size;
         while (remaining > 0) {
             uint8_t wire_type = 0;
             uint32_t field_number = 0;
@@ -78,45 +91,33 @@ namespace proto {
                 return false;
             switch (wire_type) {
                 case serialization::internal::WIRETYPE_VARINT: {
-                    std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
-                    if (it != _functionSet.end()) {
-                        uint64_t value = 0;
-                        if (!ReadVarInt(current, remaining, value) || !it->second(&value))
-                            return false;
-                    }
+					uint64_t value = 0;
+					if (!ReadVarInt(current, remaining, value) || !call(field_number, &value))
+						return false;
                 } break;
                 case serialization::internal::WIRETYPE_64BIT: {
-                    std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
-                    if (it != _functionSet.end()) {
-                        uint64_t value = 0;
-                        if (!ReadFromBytes(current, remaining, value) || !it->second(&value))
-                            return false;
-                    }
+					uint64_t value = 0;
+					if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
+						return false;
                 } break;
                 case serialization::internal::WIRETYPE_LENGTH_DELIMITED: {
-                    std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
-                    if (it != _functionSet.end()) {
-                        uint64_t size = 0;
-                        if (!ReadVarInt(current, remaining, size))
-                            return false;
-                        const uint8_t* data = current;
-                        current += size;
-                        remaining -= size;
-                        bin_type bin(data, size);
-                        if (!it->second(&bin))
-                            return false;
-                    }
-                } break;
+					uint64_t size = 0;
+					if (!ReadVarInt(current, remaining, size))
+						return false;
+					const uint8_t* data = current;
+					current += size;
+					remaining -= size;
+					bin_type bin(data, size);
+					if (!call(field_number, &bin))
+						return false;
+                    } break;
                 case serialization::internal::WIRETYPE_GROUP_START:
                 case serialization::internal::WIRETYPE_GROUP_END:
                     return false;
                 case serialization::internal::WIRETYPE_32BIT: {
-                    std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
-                    if (it != _functionSet.end()) {
-                        uint32_t value = 0;
-                        if (!ReadFromBytes(current, remaining, value) || !it->second(&value))
-                            return false;
-                    }
+					uint32_t value = 0;
+					if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
+						return false;
                 } break;
                 default: {
                     return false;
@@ -131,90 +132,90 @@ namespace proto {
 namespace serialization {
 
     PBDecoder::PBDecoder(const uint8_t* sz, unsigned int size)
-        : _msg(sz, size), _bParseResult(true) {
+        : _msg(NULL), _sz(sz), _size(size), _bParseResult(true) {
     }
 
     bool PBDecoder::decodeValue(serializeItem<bool>& v) {
-        return _msg.bind<uint64_t, bool>(&PBDecoder::convertValue, v);
+        return _msg->bind<uint64_t, bool>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeValue(serializeItem<int32_t>& v) {
-        return _msg.bind<uint64_t, int32_t>(&PBDecoder::convertValue, v);
+        return _msg->bind<uint64_t, int32_t>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeValue(serializeItem<uint32_t>& v) {
-        return _msg.bind<uint64_t, uint32_t>(&PBDecoder::convertValue, v);
+        return _msg->bind<uint64_t, uint32_t>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeValue(serializeItem<int64_t>& v) {
-        return _msg.bind<uint64_t, int64_t>(&PBDecoder::convertValue, v);
+        return _msg->bind<uint64_t, int64_t>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeValue(serializeItem<uint64_t>& v) {
-        return _msg.bind<uint64_t, uint64_t>(&PBDecoder::convertValue, v);
+        return _msg->bind<uint64_t, uint64_t>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeValue(serializeItem<float>& v) {
-        return _msg.bind<uint32_t, float>(&PBDecoder::convertValue, v);
+        return _msg->bind<uint32_t, float>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeValue(serializeItem<double>& v) {
-        return _msg.bind<uint64_t, double>(&PBDecoder::convertValue, v);
+        return _msg->bind<uint64_t, double>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeValue(serializeItem<std::string>& v) {
-        return _msg.bind<proto::bin_type, std::string>(&PBDecoder::convertValue, v);
+        return _msg->bind<proto::bin_type, std::string>(&PBDecoder::convertValue, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<bool> >& v) {
         if (v.type == serialization::TYPE_PACK)
-            return _msg.bind<proto::bin_type, std::vector<bool> >(&PBDecoder::convertArray, v);
+            return _msg->bind<proto::bin_type, std::vector<bool> >(&PBDecoder::convertArray, v);
         else
-            return _msg.bind<uint64_t, std::vector<bool> >(&PBDecoder::convertArray, v);
+            return _msg->bind<uint64_t, std::vector<bool> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<int32_t> >& v) {
         if (v.type == serialization::TYPE_PACK)
-            return _msg.bind<proto::bin_type, std::vector<int32_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<proto::bin_type, std::vector<int32_t> >(&PBDecoder::convertArray, v);
         else
-            return _msg.bind<uint64_t, std::vector<int32_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<uint64_t, std::vector<int32_t> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<uint32_t> >& v) {
         if (v.type == serialization::TYPE_PACK)
-            return _msg.bind<proto::bin_type, std::vector<uint32_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<proto::bin_type, std::vector<uint32_t> >(&PBDecoder::convertArray, v);
         else
-            return _msg.bind<uint64_t, std::vector<uint32_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<uint64_t, std::vector<uint32_t> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<int64_t> >& v) {
         if (v.type == serialization::TYPE_PACK)
-            return _msg.bind<proto::bin_type, std::vector<int64_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<proto::bin_type, std::vector<int64_t> >(&PBDecoder::convertArray, v);
         else
-            return _msg.bind<uint64_t, std::vector<int64_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<uint64_t, std::vector<int64_t> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<uint64_t> >& v) {
         if (v.type == serialization::TYPE_PACK)
-            return _msg.bind<proto::bin_type, std::vector<uint64_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<proto::bin_type, std::vector<uint64_t> >(&PBDecoder::convertArray, v);
         else
-            return _msg.bind<uint64_t, std::vector<uint64_t> >(&PBDecoder::convertArray, v);
+            return _msg->bind<uint64_t, std::vector<uint64_t> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<float> >& v) {
-        return _msg.bind<uint64_t, std::vector<float> >(&PBDecoder::convertArray, v);
+        return _msg->bind<uint64_t, std::vector<float> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<double> >& v) {
-        return _msg.bind<uint64_t, std::vector<double> >(&PBDecoder::convertArray, v);
+        return _msg->bind<uint64_t, std::vector<double> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<std::string> >& v) {
-        return _msg.bind<proto::bin_type, std::vector<std::string> >(&PBDecoder::convertArray, v);
+        return _msg->bind<proto::bin_type, std::vector<std::string> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::ParseFromBytes() {
-        return _msg.ParseFromBytes();
+        return _msg->ParseFromBytes(_sz, _size);
     }
 
 }

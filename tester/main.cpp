@@ -90,6 +90,7 @@ int main(int argc, char* argv[]) {
         struExamples items2;
         serialization::PBDecoder decoder(buffer.data(), buffer.size());
         bool b = decoder >> items2;
+		bool b2 = decoder >> items;
         assert(b);
     }
 
