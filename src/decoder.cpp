@@ -58,6 +58,13 @@ namespace proto {
 		_struct = (uint8_t*)pStruct;
 	}
 
+	void Message::offset(uint32_t field_number, unsigned long n) {
+		std::map<uint32_t, converter>::iterator it = _functionSet.find(field_number);
+		if (it != _functionSet.end()) {
+			it->second.offset(n);
+		}
+	}
+
 	bool Message::call(uint32_t field_number, const void* cValue) const {
 		std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
 		if (it != _functionSet.end()) {

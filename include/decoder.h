@@ -31,13 +31,14 @@ namespace proto {
         class converter {
             bool convert(void*, const void*, const uint32_t, bool*);
             convert_t _func;
-			uint32_t _offset;
+			unsigned long _offset;
             const uint32_t _type;
             bool* _pHas;
         public:
-            converter(convert_t func, uint32_t offset, const uint32_t type, bool* pHas) :_func(func), _offset(offset), _type(type), _pHas(pHas) {}
+            converter(convert_t func, unsigned long offset, const uint32_t type, bool* pHas) :_func(func), _offset(offset), _type(type), _pHas(pHas) {}
             bool operator()(void* value, const void* cValue) const { return (*_func)(value, cValue, _type, _pHas); }
-			uint32_t offset() const { return _offset; }
+			unsigned long offset() const { return _offset; }
+			void offset(unsigned long offset) { _offset = offset; }
         };
 
 		uint8_t* _struct;
@@ -45,6 +46,9 @@ namespace proto {
 
     public:
         Message();
+
+		bool empty() const { return _functionSet.empty(); }
+		void offset(uint32_t field_number, unsigned long n);
 
 		void setStruct(void* pStruct);
 		bool call(uint32_t field_number, const void* cValue) const;
@@ -54,19 +58,19 @@ namespace proto {
 
         template<typename P, typename T>
         bool bind(bool(*f)(T&, const P&, const uint32_t, bool*), serialization::serializeItem<T>& value) {
-			uint32_t offset = ((uint8_t*)(&value.value))-_struct;
+			unsigned long offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename T>
         bool bind(bool(*f)(std::vector<T>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::vector<T> >& value) {
-			uint32_t offset = ((uint8_t*)(&value.value)) - _struct;
+			unsigned long offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename K, typename V>
         bool bind(bool(*f)(std::map<K, V>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::map<K, V> >& value) {
-			uint32_t offset = ((uint8_t*)(&value.value)) - _struct;
+			unsigned long offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
@@ -239,12 +243,17 @@ namespace serialization {
             serialization::PBDecoder decoder(cValue.first, cValue.second);
 			static proto::Message msg;
 			decoder._msg = &msg;
-            K key = K();
-            serialization::serializeItem<K> kItem = SERIALIZE(1, key);
-			decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<K>::Type>*)(&kItem));
-            V v = V();
-            serialization::serializeItem<V> vItem = SERIALIZE(2, v);
-			decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem));
+			K key = K();
+			V v = V();
+			if (msg.empty()) {
+				serialization::serializeItem<K> kItem = SERIALIZE(1, key);
+				decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<K>::Type>*)(&kItem));
+				serialization::serializeItem<V> vItem = SERIALIZE(2, v);
+				decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem));
+			} else {
+				msg.offset(1, (unsigned long)((uint8_t*)&key - NULL));
+				msg.offset(2, (unsigned long)((uint8_t*)&v - NULL));
+			}
             if (!decoder.ParseFromBytes())
                 return false;
             value.insert(std::pair<K, V>(key, v));
