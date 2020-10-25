@@ -8,6 +8,37 @@
 
 namespace serialization {
 
+	template<typename T>
+	inline bool empty(const T& v) {
+		uint8_t* szValue = (uint8_t*)&v;
+		for (uint32_t idx = 0; idx < sizeof(T); ++idx) {
+			if (szValue[idx])
+				return false;
+		}
+		return true;
+	}
+	inline bool empty(const std::string& v) { return v.empty(); }
+
+	class EXPORTAPI BufferWrapper {
+		std::string& _buffer;
+
+		bool _bCalculateFlag;
+		size_t _cumtomFieldSize;
+
+	public:
+		explicit BufferWrapper(std::string& buffer);
+
+		uint8_t* data() { return (uint8_t*)&_buffer.begin(); }
+		const uint8_t* data() const { return (uint8_t*)&_buffer.begin(); }
+		size_t size() const { return _buffer.size(); }
+
+		void append(const void* data, size_t len);
+
+		void startCalculateSize();
+		std::pair<bool, size_t> getCustomField() const { return std::pair<bool, size_t>(_bCalculateFlag, _cumtomFieldSize); }
+		void setCustomField(const std::pair<bool, size_t>& pair) { _bCalculateFlag = pair.first; _cumtomFieldSize = pair.second; }
+	};
+
     class EXPORTAPI PBEncoder {
         class calculateFieldHelper {
             BufferWrapper& _buff;
@@ -26,9 +57,9 @@ namespace serialization {
 
         typedef void(PBEncoder::*writeValue)(uint64_t);
         static writeValue const functionArray[4];
-        BufferWrapper& _buffer;
+        BufferWrapper _buffer;
     public:
-        PBEncoder(BufferWrapper& _buffer);
+        explicit PBEncoder(std::string& buffer);
         ~PBEncoder();
 
         const char* data()const;
@@ -43,17 +74,19 @@ namespace serialization {
 
         template<typename T>
         PBEncoder& operator&(const serializeItem<T>& value) {
-            uint64_t tag = ((uint64_t)value.num << 3) | internal::isMessage<T>::WRITE_TYPE;
-            varInt(tag);
-            if (internal::isMessage<T>::YES) {
-                size_t nCustomFieldSize = 0;
-                do {
-                    calculateFieldHelper h(_buffer, nCustomFieldSize);
-                    encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.value), value.type);
-                } while (0);
-                varInt(nCustomFieldSize);
-            }
-            encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.value), value.type);
+			if (!value.bHas || !empty(value.value)) {
+				uint64_t tag = ((uint64_t)value.num << 3) | internal::isMessage<T>::WRITE_TYPE;
+				varInt(tag);
+				if (internal::isMessage<T>::YES) {
+					size_t nCustomFieldSize = 0;
+					do {
+						calculateFieldHelper h(_buffer, nCustomFieldSize);
+						encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.value), value.type);
+					} while (0);
+					varInt(nCustomFieldSize);
+				}
+				encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.value), value.type);
+			}
             return *this;
         }
 

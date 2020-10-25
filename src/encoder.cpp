@@ -2,8 +2,25 @@
 
 namespace serialization {
 
+	BufferWrapper::BufferWrapper(std::string& buffer) : _buffer(buffer), _bCalculateFlag(false), _cumtomFieldSize(0) {
+	}
+
+	void BufferWrapper::append(const void* data, size_t len) {
+		if (_bCalculateFlag) {
+			_cumtomFieldSize += len;
+		}
+		else {
+			_buffer.append((const char*)data, len);
+		}
+	}
+
+	void BufferWrapper::startCalculateSize() {
+		_bCalculateFlag = true;
+		_cumtomFieldSize = 0;
+	}
+
     PBEncoder::writeValue const PBEncoder::functionArray[] = { &PBEncoder::varInt, &PBEncoder::svarInt, &PBEncoder::fixed32, &PBEncoder::fixed64, };
-    PBEncoder::PBEncoder(BufferWrapper& buffer) :_buffer(buffer) {
+    PBEncoder::PBEncoder(std::string& buffer) :_buffer(buffer) {
     }
 
     PBEncoder::~PBEncoder() {
