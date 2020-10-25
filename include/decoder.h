@@ -8,6 +8,8 @@
 
 namespace proto {
 
+	typedef size_t offset_type;
+
     typedef std::pair<const uint8_t*, size_t> bin_type;
 
     //TYPE_VARINT = 0,    // int32,int64,uint32,uint64,bool,enum
@@ -31,14 +33,14 @@ namespace proto {
         class converter {
             bool convert(void*, const void*, const uint32_t, bool*);
             convert_t _func;
-			unsigned long _offset;
+			offset_type _offset;
             const uint32_t _type;
             bool* _pHas;
         public:
-            converter(convert_t func, unsigned long offset, const uint32_t type, bool* pHas) :_func(func), _offset(offset), _type(type), _pHas(pHas) {}
+            converter(convert_t func, offset_type offset, const uint32_t type, bool* pHas) :_func(func), _offset(offset), _type(type), _pHas(pHas) {}
             bool operator()(void* value, const void* cValue) const { return (*_func)(value, cValue, _type, _pHas); }
-			unsigned long offset() const { return _offset; }
-			void offset(unsigned long offset) { _offset = offset; }
+			offset_type offset() const { return _offset; }
+			void offset(offset_type offset) { _offset = offset; }
         };
 
 		uint8_t* _struct;
@@ -48,7 +50,7 @@ namespace proto {
         Message();
 
 		bool empty() const { return _functionSet.empty(); }
-		void offset(uint32_t field_number, unsigned long n);
+		void offset(uint32_t field_number, offset_type n);
 
 		void setStruct(void* pStruct);
 		bool call(uint32_t field_number, const void* cValue) const;
@@ -58,19 +60,19 @@ namespace proto {
 
         template<typename P, typename T>
         bool bind(bool(*f)(T&, const P&, const uint32_t, bool*), serialization::serializeItem<T>& value) {
-			unsigned long offset = ((uint8_t*)(&value.value)) - _struct;
+			offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename T>
         bool bind(bool(*f)(std::vector<T>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::vector<T> >& value) {
-			unsigned long offset = ((uint8_t*)(&value.value)) - _struct;
+			offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename K, typename V>
         bool bind(bool(*f)(std::map<K, V>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::map<K, V> >& value) {
-			unsigned long offset = ((uint8_t*)(&value.value)) - _struct;
+			offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
@@ -251,8 +253,8 @@ namespace serialization {
 				serialization::serializeItem<V> vItem = SERIALIZE(2, v);
 				decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem));
 			} else {
-				msg.offset(1, (unsigned long)((uint8_t*)&key - NULL));
-				msg.offset(2, (unsigned long)((uint8_t*)&v - NULL));
+				msg.offset(1, (proto::offset_type)((uint8_t*)&key - NULL));
+				msg.offset(2, (proto::offset_type)((uint8_t*)&v - NULL));
 			}
             if (!decoder.ParseFromBytes())
                 return false;
