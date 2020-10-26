@@ -31,7 +31,6 @@ namespace proto {
     class EXPORTAPI Message {
         typedef bool(*convert_t)(void*, const void*, const uint32_t, bool*);
         class converter {
-            bool convert(void*, const void*, const uint32_t, bool*);
             convert_t _func;
 			offset_type _offset;
             const uint32_t _type;
