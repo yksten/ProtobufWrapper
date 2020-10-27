@@ -150,12 +150,11 @@ namespace serialization {
         template<typename V> PBEncoder& operator&(const serializeItem<std::map<float, V> >& value);
         template<typename V> PBEncoder& operator&(const serializeItem<std::map<double, V> >& value);
     private:
-        void value(uint64_t value, int32_t type);
-        void encodeVarint32(uint32_t low, uint32_t high);
-        static void varInt(uint64_t value, BufferWrapper& buf);
-        static void svarInt(uint64_t value, BufferWrapper& buf);
-        static void fixed32(uint64_t value, BufferWrapper& buf);
-        static void fixed64(uint64_t value, BufferWrapper& buf);
+        static void encodeVarint(uint32_t low, uint32_t high, BufferWrapper& buf);
+        static void varInt(const uint64_t& value, BufferWrapper& buf);
+        static void svarInt(const uint64_t& value, BufferWrapper& buf);
+        static void fixed32(const uint64_t& value, BufferWrapper& buf);
+        static void fixed64(const uint64_t& value, BufferWrapper& buf);
 
 		static void encodeValue(const bool& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
 		static void encodeValue(const int32_t& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
@@ -189,14 +188,17 @@ namespace serialization {
 
 
 			uint32_t size = (uint32_t)value.size();
-			for (uint32_t i = 0; i < size; varInt(tag, buf), ++i) {
+			for (uint32_t i = 0; i < size; ++i) {
+				if (i) varInt(tag, buf);
 				encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), type, tag, buf);
 			}
 		}
 
 		template<typename K, typename V>
 		static void encodeValue(const std::map<K, V>& value, uint32_t type, uint64_t tag, BufferWrapper& buf) {
-			for (typename std::map<K, V>::const_iterator it = value.begin(); it != value.end(); varInt(tag, buf), ++it) {
+			bool bFirst = true;
+			for (typename std::map<K, V>::const_iterator it = value.begin(); it != value.end(); bFirst = false, ++it) {
+				if (!bFirst) varInt(tag, buf);
 				size_t nCustomFieldSize = 0;
 				do {
 					calculateFieldHelper h(buf, nCustomFieldSize);

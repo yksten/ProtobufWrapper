@@ -19,21 +19,17 @@ namespace serialization {
 
     PBEncoder::~PBEncoder() {
     }
-
-    void PBEncoder::value(uint64_t value, int32_t type) {
-        //(this->*functionArray[type])(value);
-    }
-
-    void PBEncoder::varInt(uint64_t value, BufferWrapper& buf) {
+		
+    void PBEncoder::varInt(const uint64_t& value, BufferWrapper& buf) {
         if (value <= 0x7F) {
             char byte = (char)value;
 			buf.append(&((char)byte), 1);
         } else {
-            //encodeVarint32((uint32_t)value, (uint32_t)(value >> 32));
+            encodeVarint((uint32_t)value, (uint32_t)(value >> 32), buf);
         }
     }
 
-    void PBEncoder::svarInt(uint64_t value, BufferWrapper& buf) {
+    void PBEncoder::svarInt(const uint64_t& value, BufferWrapper& buf) {
         uint64_t zigzagged;
         if (value < 0)
             zigzagged = ~((uint64_t)value << 1);
@@ -42,14 +38,14 @@ namespace serialization {
         varInt(zigzagged, buf);
     }
 
-    void PBEncoder::fixed32(uint64_t value, BufferWrapper& buf) {
+    void PBEncoder::fixed32(const uint64_t& value, BufferWrapper& buf) {
         uint32_t val = static_cast<uint32_t>(value);
         uint8_t bytes[4] = { (uint8_t)(val & 0xFF), (uint8_t)((val >> 8) & 0xFF),
             (uint8_t)((val >> 16) & 0xFF), (uint8_t)((val >> 24) & 0xFF) };
 		buf.append(bytes, 4);
     }
 
-    void PBEncoder::fixed64(uint64_t value, BufferWrapper& buf) {
+    void PBEncoder::fixed64(const uint64_t& value, BufferWrapper& buf) {
         uint8_t bytes[8] = { (uint8_t)(value & 0xFF), (uint8_t)((value >> 8) & 0xFF),
             (uint8_t)((value >> 16) & 0xFF), (uint8_t)((value >> 24) & 0xFF),
             (uint8_t)((value >> 32) & 0xFF), (uint8_t)((value >> 40) & 0xFF),
@@ -57,32 +53,32 @@ namespace serialization {
 		buf.append(bytes, 8);
     }
 
-    void PBEncoder::encodeVarint32(uint32_t low, uint32_t high) {
+    void PBEncoder::encodeVarint(uint32_t low, uint32_t high, BufferWrapper& buf) {
         size_t i = 0;
-        char buffer[10] = { 0 };
-        char byte = (char)(low & 0x7F);
+        uint8_t buffer[10] = { 0 };
+		uint8_t byte = (uint8_t)(low & 0x7F);
         low >>= 7;
 
         while (i < 4 && (low != 0 || high != 0)) {
             byte |= 0x80;
             buffer[i++] = byte;
-            byte = (char)(low & 0x7F);
+            byte = (uint8_t)(low & 0x7F);
             low >>= 7;
         }
 
         if (high) {
-            byte = (char)(byte | ((high & 0x07) << 4));
+            byte = (uint8_t)(byte | ((high & 0x07) << 4));
             high >>= 3;
 
             while (high) {
                 byte |= 0x80;
                 buffer[i++] = byte;
-                byte = (char)(high & 0x7F);
+                byte = (uint8_t)(high & 0x7F);
                 high >>= 7;
             }
         }
         buffer[i++] = byte;
-        _buffer.append(buffer, i);
+        buf.append(buffer, i);
     }
 
 	void PBEncoder::encodeValue(const bool& v, uint32_t type, uint64_t tag, BufferWrapper& buf) {
