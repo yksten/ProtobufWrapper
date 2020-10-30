@@ -8,105 +8,97 @@
 
 namespace serialization {
 
-	template<typename T>
-	inline bool empty(const T& v) {
-		uint8_t* szValue = (uint8_t*)&v;
-		for (uint32_t idx = 0; idx < sizeof(T); ++idx) {
-			if (szValue[idx])
-				return false;
-		}
-		return true;
-	}
-
 		class EXPORTAPI BufferWrapper {
-			std::string& _buffer;
-
+			std::string _buffer;
 			bool _bCalculateFlag;
 			size_t _cumtomFieldSize;
-
-			friend class PBEncoder;
 		public:
-			explicit BufferWrapper(std::string& buffer);
+			BufferWrapper();
 
-			uint8_t* data() { return (uint8_t*)&_buffer.begin(); }
-			const uint8_t* data() const { return (uint8_t*)&_buffer.begin(); }
-			size_t size() const { return _buffer.size(); }
-
+			const uint8_t* data() const;
+			size_t size() const;
 			void append(const void* data, size_t len);
-
-			void startCalculateSize() { _bCalculateFlag = true; _cumtomFieldSize = 0; }
-			std::pair<bool, size_t> getCustomField() const { return std::pair<bool, size_t>(_bCalculateFlag, _cumtomFieldSize); }
-			void setCustomField(const std::pair<bool, size_t>& pair) { _bCalculateFlag = pair.first; _cumtomFieldSize = pair.second; }
+		
+			void startCalculateSize();
+			std::pair<bool, size_t> getCustomField() const;
+			void setCustomField(const std::pair<bool, size_t>& pair);
 		};
 
     class EXPORTAPI PBEncoder {
 
+		class calculateFieldHelper {
+			BufferWrapper& _buff;
+			size_t& _nSize;
+			std::pair<bool, size_t> _customField;
+		public:
+			calculateFieldHelper(BufferWrapper& buff, size_t& nSize)
+				:_buff(buff), _nSize(nSize), _customField(_buff.getCustomField()) {
+				_buff.startCalculateSize();
+			}
+			~calculateFieldHelper() {
+				_nSize = _buff.getCustomField().second;
+				_buff.setCustomField(_customField);
+			}
+		};
+
+		struct enclosure_type {
+			enclosure_type(uint32_t t, uint32_t n, bool* b) :type(t), size(n), pHas(b) {}
+			uint8_t sz[10];
+			uint32_t size;
+			uint32_t type;
+			bool* pHas;
+		};
+
 		class convertMgr {
-			typedef void(*convert_t)(const void*, uint32_t, uint64_t, BufferWrapper&);
+			typedef void(*convert_t)(const void*, const enclosure_type&, BufferWrapper&);
 			typedef size_t offset_type;
 			class converter {
 				convert_t _func;
-				uint64_t _tag;
-				uint32_t _type;
 				offset_type _offset;
-				bool* _pHas;
+				enclosure_type _info;
 			public:
 				converter(convert_t func, uint64_t tag, uint32_t type, offset_type offset, bool* pHas)
-					:_func(func), _tag(tag), _type(type), _offset(offset), _pHas(pHas) {}
-				void operator()(const void* cValue, BufferWrapper& buf) const {
-					//has empty
-					PBEncoder::varInt(_tag, buf);
-					(*_func)(cValue, _type, _tag, buf);
+					:_func(func), _offset(offset), _info(encodeVarint(tag, type, pHas)) {
 				}
-				offset_type offset() const { return _offset; }
-				void offset(offset_type offset) { _offset = offset; }
+				void operator()(const void* cValue, BufferWrapper& buf) const {
+					(*_func)((const uint8_t*)cValue + _offset, _info, buf);
+				}
 			};
 			const uint8_t* _struct;
 			std::vector<converter> _functionSet;
 		public:
 			void setStruct(const void* pStruct) { _struct = (const uint8_t*)pStruct; }
 			template<typename T>
-			void bind(void(*f)(const T&, uint32_t, uint64_t, BufferWrapper&), const serializeItem<T>& value) {
+			void bind(void(*f)(const T&, const enclosure_type&, BufferWrapper&), const serializeItem<T>& value) {
 				uint64_t tag = ((uint64_t)value.num << 3) | internal::isMessage<T>::WRITE_TYPE;
 				offset_type offset = ((const uint8_t*)(&value.value)) - _struct;
 				_functionSet.push_back(converter(convert_t(f), tag, value.type, offset, value.bHas));
 			}
 			template<typename T>
-			void bind(void(*f)(const std::vector<T>&, uint32_t, uint64_t, BufferWrapper&), const serializeItem<std::vector<T> >& value) {
+			void bind(void(*f)(const std::vector<T>&, const enclosure_type&, BufferWrapper&), const serializeItem<std::vector<T> >& value) {
 				uint64_t tag = ((uint64_t)value.num << 3) | internal::isMessage<T>::WRITE_TYPE;
 				offset_type offset = ((const uint8_t*)(&value.value)) - _struct;
 				_functionSet.push_back(converter(convert_t(f), tag, value.type, offset, value.bHas));
 			}
-			template<typename K, typename V>
-			void bind(void(*f)(const std::map<K, V>&, uint32_t, uint64_t, BufferWrapper&), const serializeItem<std::map<K, V> >& value) {
+			template<typename T>
+			void bindPack(void(*f)(const std::vector<T>&, const enclosure_type&, BufferWrapper&), const serializeItem<std::vector<T> >& value) {
 				uint64_t tag = ((uint64_t)value.num << 3) | internal::WIRETYPE_LENGTH_DELIMITED;
 				offset_type offset = ((const uint8_t*)(&value.value)) - _struct;
 				_functionSet.push_back(converter(convert_t(f), tag, value.type, offset, value.bHas));
 			}
-			void doConvert(const uint8_t* pStruct, BufferWrapper& buf) {
+			template<typename K, typename V>
+			void bind(void(*f)(const std::map<K, V>&, const enclosure_type&, BufferWrapper&), const serializeItem<std::map<K, V> >& value) {
+				uint64_t tag = ((uint64_t)value.num << 3) | internal::WIRETYPE_LENGTH_DELIMITED;
+				offset_type offset = ((const uint8_t*)(&value.value)) - _struct;
+				_functionSet.push_back(converter(convert_t(f), tag, value.type, offset, value.bHas));
+			}
+			void doConvert(const void* pStruct, BufferWrapper& buf) {
 				for (uint32_t idx = 0; idx < _functionSet.size(); ++idx) {
-					converter& item = _functionSet[idx];
-					(item)(pStruct + item.offset(), buf);
+					(_functionSet[idx])(pStruct, buf);
 				}
 			}
 		};
 
-        class calculateFieldHelper {
-            BufferWrapper& _buff;
-            size_t& _nSize;
-            std::pair<bool, size_t> _customField;
-        public:
-            calculateFieldHelper(BufferWrapper& buff, size_t& nSize)
-                :_buff(buff), _nSize(nSize), _customField(_buff.getCustomField()) {
-                _buff.startCalculateSize();
-            }
-            ~calculateFieldHelper() {
-                _nSize = _buff.getCustomField().second;
-                _buff.setCustomField(_customField);
-            }
-        };
-
-        typedef void(PBEncoder::*writeValue)(uint64_t);
         BufferWrapper& _buffer;
 		convertMgr* _mgr;
     public:
@@ -138,7 +130,12 @@ namespace serialization {
 
         template<typename T>
         PBEncoder& operator&(const serializeItem<std::vector<T> >& value) {
-            _mgr->bind<internal::TypeTraits<T>::Type>(&PBEncoder::encodeValue, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
+			if (value.type == TYPE_PACK) {
+				_mgr->bindPack<internal::TypeTraits<T>::Type>(&PBEncoder::encodeValuePack, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
+			}
+			else {
+				_mgr->bind<internal::TypeTraits<T>::Type>(&PBEncoder::encodeValue, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
+			}
             return *this;
         }
 
@@ -149,24 +146,27 @@ namespace serialization {
         }
         template<typename V> PBEncoder& operator&(const serializeItem<std::map<float, V> >& value);
         template<typename V> PBEncoder& operator&(const serializeItem<std::map<double, V> >& value);
-    private:
-        static void encodeVarint(uint32_t low, uint32_t high, BufferWrapper& buf);
+
         static void varInt(const uint64_t& value, BufferWrapper& buf);
         static void svarInt(const uint64_t& value, BufferWrapper& buf);
         static void fixed32(const uint64_t& value, BufferWrapper& buf);
         static void fixed64(const uint64_t& value, BufferWrapper& buf);
+    private:
+		static void encodeVarint(uint32_t low, uint32_t high, BufferWrapper& buf);
+        static PBEncoder::enclosure_type encodeVarint(uint64_t tag, uint32_t type, bool* pHas);
 
-		static void encodeValue(const bool& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
-		static void encodeValue(const int32_t& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
-		static void encodeValue(const uint32_t& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
-		static void encodeValue(const int64_t& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
-		static void encodeValue(const uint64_t& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
-		static void encodeValue(const float& value, uint32_t type, uint64_t tag, BufferWrapper& buf);
-		static void encodeValue(const double& value, uint32_t type, uint64_t tag, BufferWrapper& buf);
-		static void encodeValue(const std::string& v, uint32_t type, uint64_t tag, BufferWrapper& buf);
+		static void encodeValue(const bool& v, const enclosure_type& info, BufferWrapper& buf);
+		static void encodeValue(const int32_t& v, const enclosure_type& info, BufferWrapper& buf);
+		static void encodeValue(const uint32_t& v, const enclosure_type& info, BufferWrapper& buf);
+		static void encodeValue(const int64_t& v, const enclosure_type& info, BufferWrapper& buf);
+		static void encodeValue(const uint64_t& v, const enclosure_type& info, BufferWrapper& buf);
+		static void encodeValue(const float& value, const enclosure_type& info, BufferWrapper& buf);
+		static void encodeValue(const double& value, const enclosure_type& info, BufferWrapper& buf);
+		static void encodeValue(const std::string& v, const enclosure_type& info, BufferWrapper& buf);
 
 		template<typename T>
-		static void encodeValue(const T& v, uint32_t type, uint64_t tag, BufferWrapper& buf) {
+		static void encodeValue(const T& v, const enclosure_type& info, BufferWrapper& buf) {
+			buf.append(info.sz, info.size);
 			size_t nCustomFieldSize = 0;
 			PBEncoder encoder(buf);
 			do {
@@ -178,41 +178,38 @@ namespace serialization {
 		}
 
 		template<typename T>
-		static void encodeValue(const std::vector<T>& value, uint32_t type, uint64_t tag, BufferWrapper& buf) {
-			//uint64_t tag = ((uint64_t)value.num << 3) | internal::WIRETYPE_LENGTH_DELIMITED;
-			//varInt(tag);
-			//uint32_t size = (uint32_t)value.value.size();
-			//for (uint32_t i = 0; i < size; ++i) {
-			//	encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.value.at(i)), serialization::TYPE_VARINT);
-			//}
-
-
+		static void encodeValue(const std::vector<T>& value, const enclosure_type& info, BufferWrapper& buf) {
 			uint32_t size = (uint32_t)value.size();
 			for (uint32_t i = 0; i < size; ++i) {
-				if (i) varInt(tag, buf);
-				encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), type, tag, buf);
+				encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), info, buf);
+			}
+		}
+
+		template<typename T>
+		static void encodeValuePack(const std::vector<T>& value, const enclosure_type& info, BufferWrapper& buf) {
+			buf.append(info.sz, info.size);
+			uint32_t size = (uint32_t)value.size();
+			for (uint32_t i = 0; i < size; ++i) {
+				encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), info, buf);
 			}
 		}
 
 		template<typename K, typename V>
-		static void encodeValue(const std::map<K, V>& value, uint32_t type, uint64_t tag, BufferWrapper& buf) {
-			bool bFirst = true;
-			for (typename std::map<K, V>::const_iterator it = value.begin(); it != value.end(); bFirst = false, ++it) {
-				if (!bFirst) varInt(tag, buf);
+		static void encodeValue(const std::map<K, V>& value, const enclosure_type& info, BufferWrapper& buf) {
+			for (typename std::map<K, V>::const_iterator it = value.begin(); it != value.end(); ++it) {
+				buf.append(info.sz, info.size);
+				static enclosure_type infok = encodeVarint(((uint64_t)1 << 3) | internal::isMessage<K>::WRITE_TYPE, internal::isMessage<K>::WRITE_TYPE, NULL);
+				static enclosure_type infov = encodeVarint(((uint64_t)2 << 3) | internal::isMessage<V>::WRITE_TYPE, internal::isMessage<V>::WRITE_TYPE, NULL);
 				size_t nCustomFieldSize = 0;
 				do {
 					calculateFieldHelper h(buf, nCustomFieldSize);
-					varInt(((uint64_t)1 << 3) | internal::isMessage<K>::WRITE_TYPE, buf);
-					encodeValue(*(const typename internal::TypeTraits<K>::Type*)(&it->first), type, tag, buf);
-					varInt(((uint64_t)2 << 3) | internal::isMessage<V>::WRITE_TYPE, buf);
-					encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), type, tag, buf);
+					encodeValue(*(const typename internal::TypeTraits<K>::Type*)(&it->first), infok, buf);
+					encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), infov, buf);
 				} while (0);
 				varInt(nCustomFieldSize, buf);
 
-				varInt(((uint64_t)1 << 3) | internal::isMessage<K>::WRITE_TYPE, buf);
-				encodeValue(*(const typename internal::TypeTraits<K>::Type*)(&it->first), type, tag, buf);
-				varInt(((uint64_t)2 << 3) | internal::isMessage<V>::WRITE_TYPE, buf);
-				encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), type, tag, buf);
+				encodeValue(*(const typename internal::TypeTraits<K>::Type*)(&it->first), infok, buf);
+				encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), infov, buf);
 			}
 		}
     };
