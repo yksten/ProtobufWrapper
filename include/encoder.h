@@ -42,7 +42,7 @@ namespace serialization {
 		};
 
 		struct enclosure_type {
-			enclosure_type(uint32_t t, uint32_t n, bool* b) :type(t), size(n), pHas(b) {}
+			enclosure_type(uint32_t t, uint32_t n, bool* b) :type(t), size(n), pHas(b) { memset(sz, 0, 10); }
 			uint8_t sz[10];
 			uint32_t size;
 			uint32_t type;
@@ -106,8 +106,8 @@ namespace serialization {
         ~PBEncoder();
 
 		template<typename T>
-		PBEncoder::convertMgr& getMessage(T& value) {
-			static convertMgr mgr;
+		PBEncoder::convertMgr getMessage(T& value) {
+			convertMgr mgr;
 			_mgr = &mgr;
 			mgr.setStruct(&value);
 			internal::serializeWrapper(*this, value);
@@ -116,7 +116,7 @@ namespace serialization {
 
         template<typename T>
         bool operator<<(const T& value) {
-			static convertMgr& mgr = getMessage(*const_cast<T*>(&value));
+			static convertMgr mgr = getMessage(*const_cast<T*>(&value));
 			_mgr = &mgr;
 			mgr.doConvert((const uint8_t*)&value, _buffer);
 			return true;
@@ -179,18 +179,22 @@ namespace serialization {
 
 		template<typename T>
 		static void encodeValue(const std::vector<T>& value, const enclosure_type& info, BufferWrapper& buf) {
-			uint32_t size = (uint32_t)value.size();
-			for (uint32_t i = 0; i < size; ++i) {
-				encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), info, buf);
+			if (!value.empty()) {
+				uint32_t size = (uint32_t)value.size();
+				for (uint32_t i = 0; i < size; ++i) {
+					encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), info, buf);
+				}
 			}
 		}
 
 		template<typename T>
 		static void encodeValuePack(const std::vector<T>& value, const enclosure_type& info, BufferWrapper& buf) {
-			buf.append(info.sz, info.size);
-			uint32_t size = (uint32_t)value.size();
-			for (uint32_t i = 0; i < size; ++i) {
-				encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), info, buf);
+			if (!value.empty()) {
+				buf.append(info.sz, info.size);
+				uint32_t size = (uint32_t)value.size();
+				for (uint32_t i = 0; i < size; ++i) {
+					encodeValue(*(const typename internal::TypeTraits<T>::Type*)(&value.at(i)), info, buf);
+				}
 			}
 		}
 
