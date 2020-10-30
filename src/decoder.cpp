@@ -221,8 +221,4 @@ namespace serialization {
         return _msg->bind<proto::bin_type, std::vector<std::string> >(&PBDecoder::convertArray, v);
     }
 
-    bool PBDecoder::ParseFromBytes() {
-        return _msg->ParseFromBytes(_sz, _size);
-    }
-
 }

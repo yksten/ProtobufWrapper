@@ -184,18 +184,14 @@ namespace serialization {
 	void PBEncoder::encodeValue(const float& value, const enclosure_type& info, BufferWrapper& buf) {
 		if (!info.pHas || !value) {
 			buf.append(info.sz, info.size);
-			union { float f; uint32_t i; };
-			f = value;
-			fixed32(i, buf);
+			fixed32(*reinterpret_cast<const uint32_t*>(&value), buf);
 		}
 	}
 
 	void PBEncoder::encodeValue(const double& value, const enclosure_type& info, BufferWrapper& buf) {
 		if (!info.pHas || !value) {
 			buf.append(info.sz, info.size);
-			union { double db; uint64_t i; };
-			db = value;
-			fixed64(i, buf);
+			fixed64(*reinterpret_cast<const uint64_t*>(&value), buf);
 		}
 	}
 

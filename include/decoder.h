@@ -94,8 +94,8 @@ namespace serialization {
         PBDecoder(const uint8_t* sz, uint32_t size);
 
 		template<typename T>
-		proto::Message& getMessage(T& value) {
-			static proto::Message msg;
+		proto::Message getMessage(T& value) {
+			proto::Message msg;
 			_msg = &msg;
 			msg.setStruct(&value);
             internal::serializeWrapper(*this, value);
@@ -104,13 +104,13 @@ namespace serialization {
 
         template<typename T>
         bool operator>>(T& value) {
-			static proto::Message& msg = getMessage(value);
+			static proto::Message msg = getMessage(value);
 			_msg = &msg;
 			msg.setStruct(&value);
 			_bParseResult = false;
 			internal::serializeWrapper(*this, value);
 			_bParseResult = true;
-            return (_bParseResult && ParseFromBytes());
+            return msg.ParseFromBytes(_sz, _size);
         }
 
         template<typename T>
@@ -164,8 +164,6 @@ namespace serialization {
         bool decodeRepaeted(serializeItem<std::vector<float> >&);
         bool decodeRepaeted(serializeItem<std::vector<double> >&);
         bool decodeRepaeted(serializeItem<std::vector<std::string> >&);
-
-        bool ParseFromBytes();
 
         template<typename T, typename P>
         static bool convertValue(T& value, const P& cValue, const uint32_t type, bool* pHas) {
@@ -255,7 +253,7 @@ namespace serialization {
 				msg.offset(1, (proto::offset_type)((uint8_t*)&key - NULL));
 				msg.offset(2, (proto::offset_type)((uint8_t*)&v - NULL));
 			}
-            if (!decoder.ParseFromBytes())
+            if (!msg.ParseFromBytes(decoder._sz, decoder._size))
                 return false;
             value.insert(std::pair<K, V>(key, v));
             if (pHas) *pHas = true;
