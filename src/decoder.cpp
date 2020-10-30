@@ -68,7 +68,7 @@ namespace proto {
 	bool Message::call(uint32_t field_number, const void* cValue) const {
 		std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
 		if (it != _functionSet.end()) {
-			it->second(_struct + it->second.offset(), cValue);
+			it->second(_struct, cValue);
 			return true;
 		}
 		return false;

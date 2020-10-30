@@ -37,8 +37,7 @@ namespace proto {
             bool* _pHas;
         public:
             converter(convert_t func, offset_type offset, const uint32_t type, bool* pHas) :_func(func), _offset(offset), _type(type), _pHas(pHas) {}
-            bool operator()(void* value, const void* cValue) const { return (*_func)(value, cValue, _type, _pHas); }
-			offset_type offset() const { return _offset; }
+            bool operator()(uint8_t* pStruct, const void* cValue) const { return (*_func)(pStruct + _offset, cValue, _type, _pHas); }
 			void offset(offset_type offset) { _offset = offset; }
         };
 
@@ -152,10 +151,6 @@ namespace serialization {
         bool decodeValue(serializeItem<double>&);
         bool decodeValue(serializeItem<std::string>&);
 
-        template<typename T>
-        bool decodeRepaeted(serializeItem<std::vector<T> >& v) {
-            return _msg->bind<proto::bin_type, std::vector<T> >(&PBDecoder::convertCustomArray, v);
-        }
         bool decodeRepaeted(serializeItem<std::vector<bool> >&);
         bool decodeRepaeted(serializeItem<std::vector<int32_t> >&);
         bool decodeRepaeted(serializeItem<std::vector<uint32_t> >&);
@@ -164,6 +159,11 @@ namespace serialization {
         bool decodeRepaeted(serializeItem<std::vector<float> >&);
         bool decodeRepaeted(serializeItem<std::vector<double> >&);
         bool decodeRepaeted(serializeItem<std::vector<std::string> >&);
+
+        template<typename T>
+        bool decodeRepaeted(serializeItem<std::vector<T> >& v) {
+            return _msg->bind<proto::bin_type, std::vector<T> >(&PBDecoder::convertCustomArray, v);
+        }
 
         template<typename T, typename P>
         static bool convertValue(T& value, const P& cValue, const uint32_t type, bool* pHas) {
