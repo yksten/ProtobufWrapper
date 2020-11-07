@@ -147,12 +147,11 @@ namespace serialization {
         template<typename V> PBEncoder& operator&(const serializeItem<std::map<float, V> >& value);
         template<typename V> PBEncoder& operator&(const serializeItem<std::map<double, V> >& value);
 
-        static void varInt(const uint64_t& value, BufferWrapper& buf);
-        static void svarInt(const uint64_t& value, BufferWrapper& buf);
-        static void fixed32(const uint64_t& value, BufferWrapper& buf);
-        static void fixed64(const uint64_t& value, BufferWrapper& buf);
+        static void varInt(uint64_t value, BufferWrapper& buf);
+        static void svarInt(uint64_t value, BufferWrapper& buf);
+        static void fixed32(uint64_t value, BufferWrapper& buf);
+        static void fixed64(uint64_t value, BufferWrapper& buf);
     private:
-		static void encodeVarint(uint32_t low, uint32_t high, BufferWrapper& buf);
         static PBEncoder::enclosure_type encodeVarint(uint64_t tag, uint32_t type, bool* pHas);
 
 		static void encodeValue(const bool& v, const enclosure_type& info, BufferWrapper& buf);
