@@ -25,12 +25,12 @@
 namespace serialization {
 
     enum {
-        TYPE_VARINT  = 0,    // int32,int64,uint32,uint64,bool,enum
+        TYPE_VARINT = 0,    // int32,int64,uint32,uint64,bool,enum
         TYPE_SVARINT = 1,    // sint32,sin64
         TYPE_FIXED32 = 2,    // fixed32,sfixed32
         TYPE_FIXED64 = 3,    // fixed64,sfixed64
-        TYPE_BYTES   = 4,    // bytes
-        TYPE_PACK    = 5,    // repaeted [pack=true]
+        TYPE_BYTES = 4,    // bytes
+        TYPE_PACK = 5,    // repaeted [pack=true]
     };
 
     template<typename VALUE>
@@ -69,12 +69,12 @@ namespace serialization {
         // These are defined in:
         // https://developers.google.com/protocol-buffers/docs/encoding
         enum WireType {
-            WIRETYPE_VARINT = 0,                // int32,int64,uint32,uint64,sint32,sin64,bool,enum
-            WIRETYPE_64BIT = 1,                 // fixed64,sfixed64,double
-            WIRETYPE_LENGTH_DELIMITED = 2,      // string,bytes,embedded messages,packed repeated fields
-            WIRETYPE_GROUP_START = 3,           // Groups(deprecated)
-            WIRETYPE_GROUP_END = 4,             // Groups(deprecated)
-            WIRETYPE_32BIT = 5,                 // fixed32,sfixed32,float
+            WT_VARINT = 0,                // int32,int64,uint32,uint64,sint32,sin64,bool,enum
+            WT_64BIT = 1,                 // fixed64,sfixed64,double
+            WT_LENGTH_DELIMITED = 2,      // string,bytes,embedded messages,packed repeated fields
+            WT_GROUP_START = 3,           // Groups(deprecated)
+            WT_GROUP_END = 4,             // Groups(deprecated)
+            WT_32BIT = 5,                 // fixed32,sfixed32,float
         };
 
         template<typename From, typename To>
@@ -108,16 +108,16 @@ namespace serialization {
             static const bool value = is_convertible<T, int32_t>::value & !is_integral<T>::value;
         };
 
-        template <typename T, bool isEnum = is_enum<T>::value> struct isMessage { enum { YES = 1, WRITE_TYPE = WIRETYPE_LENGTH_DELIMITED }; };
-        template <typename T> struct isMessage<T, true> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
-        template<> struct isMessage<std::string> { enum { YES = 0, WRITE_TYPE = WIRETYPE_LENGTH_DELIMITED }; };
-        template<> struct isMessage<bool> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
-        template<> struct isMessage<int32_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
-        template<> struct isMessage<uint32_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
-        template<> struct isMessage<int64_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
-        template<> struct isMessage<uint64_t> { enum { YES = 0, WRITE_TYPE = WIRETYPE_VARINT }; };
-        template<> struct isMessage<float> { enum { YES = 0, WRITE_TYPE = WIRETYPE_32BIT }; };
-        template<> struct isMessage<double> { enum { YES = 0, WRITE_TYPE = WIRETYPE_64BIT }; };
+        template <typename T, bool isEnum = is_enum<T>::value> struct isMessage { enum { YES = 1, WRITE_TYPE = WT_LENGTH_DELIMITED }; };
+        template <typename T> struct isMessage<T, true> { enum { YES = 0, WRITE_TYPE = WT_VARINT }; };
+        template<> struct isMessage<std::string> { enum { YES = 0, WRITE_TYPE = WT_LENGTH_DELIMITED }; };
+        template<> struct isMessage<bool> { enum { YES = 0, WRITE_TYPE = WT_VARINT }; };
+        template<> struct isMessage<int32_t> { enum { YES = 0, WRITE_TYPE = WT_VARINT }; };
+        template<> struct isMessage<uint32_t> { enum { YES = 0, WRITE_TYPE = WT_VARINT }; };
+        template<> struct isMessage<int64_t> { enum { YES = 0, WRITE_TYPE = WT_VARINT }; };
+        template<> struct isMessage<uint64_t> { enum { YES = 0, WRITE_TYPE = WT_VARINT }; };
+        template<> struct isMessage<float> { enum { YES = 0, WRITE_TYPE = WT_32BIT }; };
+        template<> struct isMessage<double> { enum { YES = 0, WRITE_TYPE = WT_64BIT }; };
 
         template<class T, class C>
         inline void serialize(T& t, C& c) {

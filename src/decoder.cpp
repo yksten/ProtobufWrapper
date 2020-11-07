@@ -54,25 +54,25 @@ namespace proto {
     Message::Message() :_struct(NULL) {
     }
 
-	void Message::setStruct(void* pStruct) {
-		_struct = (uint8_t*)pStruct;
-	}
+    void Message::setStruct(void* pStruct) {
+        _struct = (uint8_t*)pStruct;
+    }
 
-	void Message::offset(uint32_t field_number, offset_type n) {
-		std::map<uint32_t, converter>::iterator it = _functionSet.find(field_number);
-		if (it != _functionSet.end()) {
-			it->second.offset(n);
-		}
-	}
+    void Message::offset(uint32_t field_number, offset_type n) {
+        std::map<uint32_t, converter>::iterator it = _functionSet.find(field_number);
+        if (it != _functionSet.end()) {
+            it->second.offset(n);
+        }
+    }
 
-	bool Message::call(uint32_t field_number, const void* cValue) const {
-		std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
-		if (it != _functionSet.end()) {
-			it->second(_struct, cValue);
-			return true;
-		}
-		return false;
-	}
+    bool Message::call(uint32_t field_number, const void* cValue) const {
+        std::map<uint32_t, converter>::const_iterator it = _functionSet.find(field_number);
+        if (it != _functionSet.end()) {
+            it->second(_struct, cValue);
+            return true;
+        }
+        return false;
+    }
 
     bool Message::ReadVarInt(const uint8_t*& current, size_t& remaining, uint64_t& result) {
         bool keep_going = false;
@@ -97,34 +97,34 @@ namespace proto {
             if (!ReadWireTypeAndFieldNumber(current, remaining, wire_type, field_number))
                 return false;
             switch (wire_type) {
-                case serialization::internal::WIRETYPE_VARINT: {
-					uint64_t value = 0;
-					if (!ReadVarInt(current, remaining, value) || !call(field_number, &value))
-						return false;
+                case serialization::internal::WT_VARINT: {
+                    uint64_t value = 0;
+                    if (!ReadVarInt(current, remaining, value) || !call(field_number, &value))
+                        return false;
                 } break;
-                case serialization::internal::WIRETYPE_64BIT: {
-					uint64_t value = 0;
-					if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
-						return false;
+                case serialization::internal::WT_64BIT: {
+                    uint64_t value = 0;
+                    if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
+                        return false;
                 } break;
-                case serialization::internal::WIRETYPE_LENGTH_DELIMITED: {
-					uint64_t size = 0;
-					if (!ReadVarInt(current, remaining, size))
-						return false;
-					const uint8_t* data = current;
-					current += size;
-					remaining -= size;
-					bin_type bin(data, size);
-					if (!call(field_number, &bin))
-						return false;
-                    } break;
-                case serialization::internal::WIRETYPE_GROUP_START:
-                case serialization::internal::WIRETYPE_GROUP_END:
+                case serialization::internal::WT_LENGTH_DELIMITED: {
+                    uint64_t size = 0;
+                    if (!ReadVarInt(current, remaining, size))
+                        return false;
+                    const uint8_t* data = current;
+                    current += size;
+                    remaining -= size;
+                    bin_type bin(data, size);
+                    if (!call(field_number, &bin))
+                        return false;
+                } break;
+                case serialization::internal::WT_GROUP_START:
+                case serialization::internal::WT_GROUP_END:
                     return false;
-                case serialization::internal::WIRETYPE_32BIT: {
-					uint32_t value = 0;
-					if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
-						return false;
+                case serialization::internal::WT_32BIT: {
+                    uint32_t value = 0;
+                    if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
+                        return false;
                 } break;
                 default: {
                     return false;

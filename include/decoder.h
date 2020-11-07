@@ -8,7 +8,7 @@
 
 namespace proto {
 
-	typedef size_t offset_type;
+    typedef size_t offset_type;
 
     typedef std::pair<const uint8_t*, size_t> bin_type;
 
@@ -32,45 +32,45 @@ namespace proto {
         typedef bool(*convert_t)(void*, const void*, const uint32_t, bool*);
         class converter {
             convert_t _func;
-			offset_type _offset;
+            offset_type _offset;
             const uint32_t _type;
             bool* _pHas;
         public:
             converter(convert_t func, offset_type offset, const uint32_t type, bool* pHas) :_func(func), _offset(offset), _type(type), _pHas(pHas) {}
             bool operator()(uint8_t* pStruct, const void* cValue) const { return (*_func)(pStruct + _offset, cValue, _type, _pHas); }
-			void offset(offset_type offset) { _offset = offset; }
+            void offset(offset_type offset) { _offset = offset; }
         };
 
-		uint8_t* _struct;
+        uint8_t* _struct;
         std::map<uint32_t, converter> _functionSet;
 
     public:
         Message();
 
-		bool empty() const { return _functionSet.empty(); }
-		void offset(uint32_t field_number, offset_type n);
+        bool empty() const { return _functionSet.empty(); }
+        void offset(uint32_t field_number, offset_type n);
 
-		void setStruct(void* pStruct);
-		bool call(uint32_t field_number, const void* cValue) const;
+        void setStruct(void* pStruct);
+        bool call(uint32_t field_number, const void* cValue) const;
 
         static bool ReadVarInt(const uint8_t*& current, size_t& remaining, uint64_t& result);
         bool ParseFromBytes(const uint8_t* sz, uint32_t size);
 
         template<typename P, typename T>
         bool bind(bool(*f)(T&, const P&, const uint32_t, bool*), serialization::serializeItem<T>& value) {
-			offset_type offset = ((uint8_t*)(&value.value)) - _struct;
+            offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename T>
         bool bind(bool(*f)(std::vector<T>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::vector<T> >& value) {
-			offset_type offset = ((uint8_t*)(&value.value)) - _struct;
+            offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename K, typename V>
         bool bind(bool(*f)(std::map<K, V>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::map<K, V> >& value) {
-			offset_type offset = ((uint8_t*)(&value.value)) - _struct;
+            offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
@@ -83,8 +83,8 @@ namespace serialization {
     class EXPORTAPI PBDecoder {
         friend class proto::Message;
         proto::Message* _msg;
-		const uint8_t* _sz;
-		unsigned int _size;
+        const uint8_t* _sz;
+        unsigned int _size;
         bool _bParseResult;
 
         PBDecoder(const PBDecoder&);
@@ -92,23 +92,23 @@ namespace serialization {
     public:
         PBDecoder(const uint8_t* sz, uint32_t size);
 
-		template<typename T>
-		proto::Message getMessage(T& value) {
-			proto::Message msg;
-			_msg = &msg;
-			msg.setStruct(&value);
+        template<typename T>
+        proto::Message getMessage(T& value) {
+            proto::Message msg;
+            _msg = &msg;
+            msg.setStruct(&value);
             internal::serializeWrapper(*this, value);
-			return msg;
-		}
+            return msg;
+        }
 
         template<typename T>
         bool operator>>(T& value) {
-			static proto::Message msg = getMessage(value);
-			_msg = &msg;
-			msg.setStruct(&value);
-			_bParseResult = false;
-			internal::serializeWrapper(*this, value);
-			_bParseResult = true;
+            static proto::Message msg = getMessage(value);
+            _msg = &msg;
+            msg.setStruct(&value);
+            _bParseResult = false;
+            internal::serializeWrapper(*this, value);
+            _bParseResult = true;
             return msg.ParseFromBytes(_sz, _size);
         }
 
@@ -171,7 +171,8 @@ namespace serialization {
                 value = proto::convertVarint<T, P>::value(cValue);
             else if (type == serialization::TYPE_SVARINT) {
                 value = proto::convertSvarint<T, P>::value(cValue);
-            } else {
+            }
+            else {
                 return false;
             }
             if (pHas) *pHas = true;
@@ -190,7 +191,8 @@ namespace serialization {
                 value.push_back(proto::convertVarint<T, P>::value(cValue));
             else if (type == serialization::TYPE_SVARINT) {
                 value.push_back(proto::convertSvarint<T, P>::value(cValue));
-            } else {
+            }
+            else {
                 return false;
             }
             if (pHas) *pHas = true;
@@ -240,19 +242,20 @@ namespace serialization {
         template<typename K, typename V>
         static bool convertMap(std::map<K, V>& value, const proto::bin_type& cValue, const uint32_t type, bool* pHas) {
             serialization::PBDecoder decoder(cValue.first, cValue.second);
-			static proto::Message msg;
-			decoder._msg = &msg;
-			K key = K();
-			V v = V();
-			if (msg.empty()) {
-				serialization::serializeItem<K> kItem = SERIALIZE(1, key);
-				decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<K>::Type>*)(&kItem));
-				serialization::serializeItem<V> vItem = SERIALIZE(2, v);
-				decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem));
-			} else {
-				msg.offset(1, (proto::offset_type)((uint8_t*)&key - NULL));
-				msg.offset(2, (proto::offset_type)((uint8_t*)&v - NULL));
-			}
+            static proto::Message msg;
+            decoder._msg = &msg;
+            K key = K();
+            V v = V();
+            if (msg.empty()) {
+                serialization::serializeItem<K> kItem = SERIALIZE(1, key);
+                decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<K>::Type>*)(&kItem));
+                serialization::serializeItem<V> vItem = SERIALIZE(2, v);
+                decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem));
+            }
+            else {
+                msg.offset(1, (proto::offset_type)((uint8_t*)&key - NULL));
+                msg.offset(2, (proto::offset_type)((uint8_t*)&v - NULL));
+            }
             if (!msg.ParseFromBytes(decoder._sz, decoder._size))
                 return false;
             value.insert(std::pair<K, V>(key, v));
