@@ -134,8 +134,8 @@ namespace serialization {
         buf.append(bytes, 8);
     }
 
-    PBEncoder::enclosure_type PBEncoder::encodeVarint(uint64_t tag, uint32_t type, bool* pHas) {
-        enclosure_type info(type, 0, pHas);
+    PBEncoder::enclosure_type PBEncoder::encodeVarint(uint64_t tag, bool* pHas) {
+        enclosure_type info(0, pHas);
 
         while (tag >= 0x80) {
             info.sz[info.size++] = static_cast<uint8_t>(tag | 0x80);
