@@ -196,9 +196,9 @@ namespace serialization {
         if (!info.pHas || v) {
             buf.append(info.sz, info.size);
             
-            uint32_t value = v;
+            uint64_t value = (int32_t)v;
             uint8_t i = 0;
-            uint8_t buffer[5];
+            uint8_t buffer[10];
             while (value >= 0x80) {
                 buffer[i++] = static_cast<uint8_t>(value | 0x80);
                 value >>= 7;

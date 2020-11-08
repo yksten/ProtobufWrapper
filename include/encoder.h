@@ -142,10 +142,10 @@ namespace serialization {
         template<typename T>
         PBEncoder& operator&(const serializeItem<std::vector<T> >& value) {
             if (value.type == TYPE_PACK) {
-                _mgr->bindPack<internal::TypeTraits<T>::Type>(&PBEncoder::encodeValuePack, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
+                _mgr->bindPack(&PBEncoder::encodeValuePack, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
             }
             else {
-                _mgr->bindArray<internal::TypeTraits<T>::Type>(&PBEncoder::encodeValue, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
+                _mgr->bindArray(&PBEncoder::encodeValue, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
             }
             return *this;
         }
@@ -160,7 +160,7 @@ namespace serialization {
 
         template<typename T>
         void encodeField(const serializeItem<T>& value) {
-            _mgr->bindCustom<internal::TypeTraits<T>::Type>(&PBEncoder::encodeValue, value);
+            _mgr->bindCustom(&PBEncoder::encodeValue, value);
         }
         void encodeField(const serializeItem<bool>& value);
         void encodeField(const serializeItem<int32_t>& value);
