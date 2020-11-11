@@ -175,35 +175,35 @@ namespace serialization {
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<bool> >& v) {
-        if (v.type == serialization::TYPE_PACK)
+        if (v.type >> 16)
             return _msg->bind<proto::bin_type, std::vector<bool> >(&PBDecoder::convertArray, v);
         else
             return _msg->bind<uint64_t, std::vector<bool> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<int32_t> >& v) {
-        if (v.type == serialization::TYPE_PACK)
+        if (v.type >> 16)
             return _msg->bind<proto::bin_type, std::vector<int32_t> >(&PBDecoder::convertArray, v);
         else
             return _msg->bind<uint64_t, std::vector<int32_t> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<uint32_t> >& v) {
-        if (v.type == serialization::TYPE_PACK)
+        if (v.type >> 16)
             return _msg->bind<proto::bin_type, std::vector<uint32_t> >(&PBDecoder::convertArray, v);
         else
             return _msg->bind<uint64_t, std::vector<uint32_t> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<int64_t> >& v) {
-        if (v.type == serialization::TYPE_PACK)
+        if (v.type >> 16)
             return _msg->bind<proto::bin_type, std::vector<int64_t> >(&PBDecoder::convertArray, v);
         else
             return _msg->bind<uint64_t, std::vector<int64_t> >(&PBDecoder::convertArray, v);
     }
 
     bool PBDecoder::decodeRepaeted(serializeItem<std::vector<uint64_t> >& v) {
-        if (v.type == serialization::TYPE_PACK)
+        if (v.type >> 16)
             return _msg->bind<proto::bin_type, std::vector<uint64_t> >(&PBDecoder::convertArray, v);
         else
             return _msg->bind<uint64_t, std::vector<uint64_t> >(&PBDecoder::convertArray, v);

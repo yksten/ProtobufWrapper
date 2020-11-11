@@ -29,8 +29,8 @@ namespace serialization {
         TYPE_SVARINT = 1,    // sint32,sin64
         TYPE_FIXED32 = 2,    // fixed32,sfixed32
         TYPE_FIXED64 = 3,    // fixed64,sfixed64
-        TYPE_BYTES = 4,      // bytes
-        TYPE_PACK = 5,       // repaeted [pack=true]
+        //TYPE_BYTES = 4,      // bytes
+        //TYPE_PACK = 5,       // repaeted [pack=true]
     };
 
     template<typename VALUE>
