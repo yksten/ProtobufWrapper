@@ -139,11 +139,13 @@ namespace google {
                     case FieldDescriptor::TYPE_FIXED32:
                     case FieldDescriptor::TYPE_SFIXED32:
                         strResult.append(", struct2x::TYPE_FIXED32");
+                    default:
+                        strResult.append(", struct2x::TYPE_VARINT");
                         break;
                     }
 
                     if (field.is_packed())
-                        strResult.append(", struct2x::TYPE_PACK");
+                        strResult.append("| (1 << 16)");
 
                     if (syntax == FileDescriptor::SYNTAX_PROTO2) {
                         if (field.label() == FieldDescriptor::LABEL_OPTIONAL)
