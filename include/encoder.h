@@ -136,7 +136,6 @@ namespace serialization {
         template<typename T>
         bool operator<<(const T& value) {
             static convertMgr mgr = getMessage(*const_cast<T*>(&value));
-            _mgr = &mgr;
             mgr.doConvert((const uint8_t*)&value, _buffer);
             return true;
         }

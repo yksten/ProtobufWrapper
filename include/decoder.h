@@ -104,7 +104,6 @@ namespace serialization {
         template<typename T>
         bool operator>>(T& value) {
             static proto::Message msg = getMessage(value);
-            _msg = &msg;
             msg.setStruct(&value);
             _bParseResult = false;
             internal::serializeWrapper(*this, value);
@@ -130,7 +129,8 @@ namespace serialization {
         template<typename K, typename V>
         PBDecoder& operator&(serializeItem<std::map<K, V> > value) {
             if (!value.value.empty()) value.value.clear();
-            _msg->bind<proto::bin_type, K, V>(&PBDecoder::convertMap, value);
+            if (_bParseResult)
+                _bParseResult = _msg->bind<proto::bin_type, K, V>(&PBDecoder::convertMap, value);
             return *this;
         }
         template<typename V>
