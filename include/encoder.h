@@ -19,6 +19,8 @@ namespace serialization {
         size_t size() const;
         void append(const void* data, size_t len);
 
+        bool isGetLength() const;
+        void append(uint32_t nLength);
         void startCalculateSize();
         std::pair<bool, size_t> getCustomField() const;
         void setCustomField(const std::pair<bool, size_t>& pair);
@@ -112,7 +114,7 @@ namespace serialization {
 
         BufferWrapper& _buffer;
         convertMgr* _mgr;
-        typedef void (*encodeFunction32)(const std::vector<uint32_t>&, const enclosure_type&, BufferWrapper&);
+        typedef void(*encodeFunction32)(const std::vector<uint32_t>&, const enclosure_type&, BufferWrapper&);
         static encodeFunction32 convsetSet32[3];
         static encodeFunction32 convsetSetPack32[3];
         typedef void(*encodeFunction64)(const std::vector<uint64_t>&, const enclosure_type&, BufferWrapper&);
@@ -149,8 +151,7 @@ namespace serialization {
         PBEncoder& operator&(const serializeItem<std::vector<T> >& value) {
             if (value.type >> 16) {
                 _mgr->bindPack(&PBEncoder::encodeValuePack, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
-            }
-            else {
+            } else {
                 _mgr->bindArray(&PBEncoder::encodeValue, *(const serializeItem<std::vector<typename internal::TypeTraits<T>::Type> >*)(&value));
             }
             return *this;

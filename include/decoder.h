@@ -171,8 +171,7 @@ namespace serialization {
                 value = proto::convertVarint<T, P>::value(cValue);
             else if (type == serialization::TYPE_SVARINT) {
                 value = proto::convertSvarint<T, P>::value(cValue);
-            }
-            else {
+            } else {
                 return false;
             }
             if (pHas) *pHas = true;
@@ -191,8 +190,7 @@ namespace serialization {
                 value.push_back(proto::convertVarint<T, P>::value(cValue));
             else if (type == serialization::TYPE_SVARINT) {
                 value.push_back(proto::convertSvarint<T, P>::value(cValue));
-            }
-            else {
+            } else {
                 return false;
             }
             if (pHas) *pHas = true;
@@ -251,8 +249,7 @@ namespace serialization {
                 decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<K>::Type>*)(&kItem));
                 serialization::serializeItem<V> vItem = SERIALIZE(2, v);
                 decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem));
-            }
-            else {
+            } else {
                 msg.offset(1, (proto::offset_type)((uint8_t*)&key - NULL));
                 msg.offset(2, (proto::offset_type)((uint8_t*)&v - NULL));
             }
