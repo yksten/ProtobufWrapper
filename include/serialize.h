@@ -14,15 +14,15 @@
 #include <stdint.h>
 #include <vector>
 
-#define SERIALIZE_2(num, value)              serialization::makeItem(#value, num, value)
-#define SERIALIZE_3(num, value, typeOrHas)   serialization::makeItem(#value, num, value, typeOrHas)
-#define SERIALIZE_4(num, value, type, has)   serialization::makeItem(#value, num, value, type, has)
+#define SERIALIZATION_2(num, value)              serialize::makeItem(#value, num, value)
+#define SERIALIZATION_3(num, value, typeOrHas)   serialize::makeItem(#value, num, value, typeOrHas)
+#define SERIALIZATION_4(num, value, type, has)   serialize::makeItem(#value, num, value, type, has)
 
 #define EXPAND(args) args
 #define MAKE_TAG_COUNT(TAG, _4, _3,_2,_1,N,...) TAG##N
-#define SERIALIZE(...) EXPAND(MAKE_TAG_COUNT(SERIALIZE, __VA_ARGS__, _4, _3,_2,_1) (__VA_ARGS__))
+#define SERIALIZATION(...) EXPAND(MAKE_TAG_COUNT(SERIALIZATION, __VA_ARGS__, _4, _3,_2,_1) (__VA_ARGS__))
 
-namespace serialization {
+namespace serialize {
 
     enum {
         TYPE_VARINT = 0,     // int32,int64,uint32,uint64,bool,enum

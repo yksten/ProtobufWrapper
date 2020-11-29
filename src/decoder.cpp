@@ -97,17 +97,17 @@ namespace proto {
             if (!ReadWireTypeAndFieldNumber(current, remaining, wire_type, field_number))
                 return false;
             switch (wire_type) {
-                case serialization::internal::WT_VARINT: {
+                case serialize::internal::WT_VARINT: {
                     uint64_t value = 0;
                     if (!ReadVarInt(current, remaining, value) || !call(field_number, &value))
                         return false;
                 } break;
-                case serialization::internal::WT_64BIT: {
+                case serialize::internal::WT_64BIT: {
                     uint64_t value = 0;
                     if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
                         return false;
                 } break;
-                case serialization::internal::WT_LENGTH_DELIMITED: {
+                case serialize::internal::WT_LENGTH_DELIMITED: {
                     uint64_t size = 0;
                     if (!ReadVarInt(current, remaining, size))
                         return false;
@@ -118,10 +118,10 @@ namespace proto {
                     if (!call(field_number, &bin))
                         return false;
                 } break;
-                case serialization::internal::WT_GROUP_START:
-                case serialization::internal::WT_GROUP_END:
+                case serialize::internal::WT_GROUP_START:
+                case serialize::internal::WT_GROUP_END:
                     return false;
-                case serialization::internal::WT_32BIT: {
+                case serialize::internal::WT_32BIT: {
                     uint32_t value = 0;
                     if (!ReadFromBytes(current, remaining, value) || !call(field_number, &value))
                         return false;
@@ -136,10 +136,14 @@ namespace proto {
 
 }  // namespace proto
 
-namespace serialization {
+namespace serialize {
 
     PBDecoder::PBDecoder(const uint8_t* sz, unsigned int size)
         : _msg(NULL), _sz(sz), _size(size), _bParseResult(true) {
+    }
+
+    PBDecoder::PBDecoder(const std::string& str) 
+        : _msg(NULL), _sz((const uint8_t*)str.c_str()), _size(str.size()), _bParseResult(true) {
     }
 
     bool PBDecoder::decodeValue(serializeItem<bool>& v) {

@@ -57,19 +57,19 @@ namespace proto {
         bool ParseFromBytes(const uint8_t* sz, uint32_t size);
 
         template<typename P, typename T>
-        bool bind(bool(*f)(T&, const P&, const uint32_t, bool*), serialization::serializeItem<T>& value) {
+        bool bind(bool(*f)(T&, const P&, const uint32_t, bool*), serialize::serializeItem<T>& value) {
             offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename T>
-        bool bind(bool(*f)(std::vector<T>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::vector<T> >& value) {
+        bool bind(bool(*f)(std::vector<T>&, const P&, const uint32_t, bool*), serialize::serializeItem<std::vector<T> >& value) {
             offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
 
         template<typename P, typename K, typename V>
-        bool bind(bool(*f)(std::map<K, V>&, const P&, const uint32_t, bool*), serialization::serializeItem<std::map<K, V> >& value) {
+        bool bind(bool(*f)(std::map<K, V>&, const P&, const uint32_t, bool*), serialize::serializeItem<std::map<K, V> >& value) {
             offset_type offset = ((uint8_t*)(&value.value)) - _struct;
             return _functionSet.insert(std::pair<uint32_t, converter>(value.num, converter(convert_t(f), offset, value.type, value.bHas))).second;
         }
@@ -78,7 +78,7 @@ namespace proto {
 
 }  // namespace proto
 
-namespace serialization {
+namespace serialize {
 
     class EXPORTAPI PBDecoder {
         friend class proto::Message;
@@ -89,8 +89,9 @@ namespace serialization {
 
         PBDecoder(const PBDecoder&);
         PBDecoder& operator=(const PBDecoder&);
-    public:
         PBDecoder(const uint8_t* sz, uint32_t size);
+    public:
+        explicit PBDecoder(const std::string& str);
 
         template<typename T>
         proto::Message getMessage(T& value) {
@@ -167,9 +168,9 @@ namespace serialization {
 
         template<typename T, typename P>
         static bool convertValue(T& value, const P& cValue, const uint32_t type, bool* pHas) {
-            if (type == serialization::TYPE_VARINT)
+            if (type == serialize::TYPE_VARINT)
                 value = proto::convertVarint<T, P>::value(cValue);
-            else if (type == serialization::TYPE_SVARINT) {
+            else if (type == serialize::TYPE_SVARINT) {
                 value = proto::convertSvarint<T, P>::value(cValue);
             } else {
                 return false;
@@ -186,9 +187,9 @@ namespace serialization {
 
         template<typename T, typename P>
         static bool convertArray(std::vector<T>& value, const P& cValue, const uint32_t type, bool* pHas) {
-            if (type == serialization::TYPE_VARINT)
+            if (type == serialize::TYPE_VARINT)
                 value.push_back(proto::convertVarint<T, P>::value(cValue));
-            else if (type == serialization::TYPE_SVARINT) {
+            else if (type == serialize::TYPE_SVARINT) {
                 value.push_back(proto::convertSvarint<T, P>::value(cValue));
             } else {
                 return false;
@@ -219,7 +220,7 @@ namespace serialization {
 
         template<typename T>
         static bool convertCustom(T& value, const proto::bin_type& cValue, const uint32_t type, bool* pHas) {
-            serialization::PBDecoder decoder(cValue.first, cValue.second);
+            serialize::PBDecoder decoder(cValue.first, cValue.second);
             if (!decoder.operator>>(value))
                 return false;
             if (pHas) *pHas = true;
@@ -228,7 +229,7 @@ namespace serialization {
 
         template<typename T>
         static bool convertCustomArray(std::vector<T>& value, const proto::bin_type& cValue, const uint32_t type, bool* pHas) {
-            serialization::PBDecoder decoder(cValue.first, cValue.second);
+            serialize::PBDecoder decoder(cValue.first, cValue.second);
             T temp = T();
             if (!decoder.operator>>(temp))
                 return false;
@@ -239,15 +240,15 @@ namespace serialization {
 
         template<typename K, typename V>
         static bool convertMap(std::map<K, V>& value, const proto::bin_type& cValue, const uint32_t type, bool* pHas) {
-            serialization::PBDecoder decoder(cValue.first, cValue.second);
+            serialize::PBDecoder decoder(cValue.first, cValue.second);
             static proto::Message msg;
             decoder._msg = &msg;
             K key = K();
             V v = V();
             if (msg.empty()) {
-                serialization::serializeItem<K> kItem = SERIALIZE(1, key);
+                serialize::serializeItem<K> kItem = SERIALIZATION(1, key);
                 decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<K>::Type>*)(&kItem));
-                serialization::serializeItem<V> vItem = SERIALIZE(2, v);
+                serialize::serializeItem<V> vItem = SERIALIZATION(2, v);
                 decoder.decodeValue(*(serializeItem<typename internal::TypeTraits<V>::Type>*)(&vItem));
             } else {
                 msg.offset(1, (proto::offset_type)((uint8_t*)&key - NULL));
