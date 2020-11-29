@@ -17,7 +17,7 @@ namespace testStruct {
 
         template<typename T>
         void serialize(T& t) {
-            t & SERIALIZE(1, id) & SERIALIZE(2, str) & SERIALIZE(3, f) & SERIALIZE(4, db);
+            t & SERIALIZATION(1, id) & SERIALIZATION(2, str) & SERIALIZATION(3, f) & SERIALIZATION(4, db);
         }
     };
 
@@ -28,7 +28,7 @@ namespace testStruct {
 
         template<typename T>
         void serialize(T& t) {
-            t & SERIALIZE(1, v) & SERIALIZE(2, m);
+            t & SERIALIZATION(1, v) & SERIALIZATION(2, m);
         }
     };
 

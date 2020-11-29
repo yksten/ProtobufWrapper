@@ -24,9 +24,13 @@ int main(int argc, char* argv[]) {
     items.v.push_back(item);
     items.m[2] = item;
 
-    serialization::BufferWrapper buffer;
-    serialization::PBEncoder encoder(buffer);
+    std::string buffer;
+    serialize::PBEncoder encoder(buffer);
     encoder << items;
+
+    testStruct::struExamples items2;
+    serialize::PBDecoder decoder(buffer);
+    decoder >> items2;
 
     test::struExamples pbItems;
     bool ret = pbItems.ParseFromArray(buffer.data(), buffer.size());
@@ -52,10 +56,6 @@ int main(int argc, char* argv[]) {
     }
     std::string strBuffer;
     pbItems.SerializeToString(&strBuffer);
-
-    testStruct::struExamples items2;
-    serialization::PBDecoder decoder((const uint8_t*)strBuffer.data(), strBuffer.size());
-    decoder >> items2;
     
     return 0;
 }
