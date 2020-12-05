@@ -24,8 +24,10 @@ ELSE ()
 ENDIF (MSVC)
 
 
-SET(TESTER "./tester/main.cpp")
-SOURCE_GROUP(tester FILES ${TESTER})
-
-ADD_EXECUTABLE(tester ${TESTER})
-TARGET_LINK_LIBRARIES(tester PBWrapper)
+SET(EXEC OFF CACHE BOOL "")
+if (${EXEC} STREQUAL ON)
+    SET(TESTER "./tester/main.cpp")
+    SOURCE_GROUP(tester FILES ${TESTER})
+    ADD_EXECUTABLE(tester ${TESTER})
+    TARGET_LINK_LIBRARIES(tester PBWrapper)
+endif()
