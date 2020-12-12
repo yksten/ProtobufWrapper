@@ -5,11 +5,9 @@
 #include "encoder.h"
 
 #ifdef _MSC_VER
-#include <io.h>
+#include "benchmark.h"
 #endif
-#include <fstream>
 
-#include "benchmark/benchmark.h"
 
 enum EnumType {
     ET1,
@@ -29,11 +27,6 @@ struct struExample {
     }
 };
 
-//template<typename T>
-//void serialize(T& t, struExample& item) {
-//    t & SERIALIZATION(1, item._id) & SERIALIZATION(2, item._str) & SERIALIZATION(3, item._i) & SERIALIZATION(4, item._num);
-//}
-
 struct struExamples {
     std::vector<struExample> _v;
     std::map<int, struExample> _m;
@@ -43,12 +36,6 @@ struct struExamples {
         t & SERIALIZATION(1, _v) & SERIALIZATION(2, _m);
     }
 };
-
-//template<typename T>
-//void serialize(T& t, struExamples& items) {
-//    t & SERIALIZATION(1, items._v);
-//    t & SERIALIZATION(2, items._m);
-//}
 
 void test() {
     struExample item;
@@ -76,29 +63,7 @@ void test() {
     bool b2 = decoder >> items;
     assert(b);
 }
-
-//int main(int argc, char* argv[]) {
-//    if (argc > 1)
-//    {
-//        std::ifstream file;
-//        file.open(argv[1], std::ios::in | std::ios::binary);
-//        assert(file.is_open());
-//        file.seekg(0, file.end);
-//        int length = file.tellg();
-//        file.seekg(0, file.beg);
-//        char* szBuffer = new char[length];
-//        file.read(szBuffer, length);
-//        file.close();
-//
-//        struExamples items;
-//        serialization::PBDecoder decoder((uint8_t*)szBuffer, length);
-//        decoder >> items;
-//        delete[] szBuffer;
-//    }
-//
-//    return 0;
-//}
-
+#ifdef _MSC_VER
 static void pb_encode(benchmark::State& st) {
     struExample item;
     item._id = ET2;
@@ -146,18 +111,20 @@ static void pb_decode(benchmark::State& st) {
         bool b = decoder >> items2;
     }
 }
-
 BENCHMARK(pb_encode);
 BENCHMARK(pb_decode);
+#endif
 
 int main(int argc, char** argv) {
+#ifdef _MSC_VER
     ::benchmark::Initialize(&argc, argv);
     if (::benchmark::ReportUnrecognizedArguments(argc, argv))
         return 1;
     ::benchmark::RunSpecifiedBenchmarks();
 
-#ifdef _MSC_VER
     system("pause");
+#else
+    test();
 #endif
     return 0;
 }
