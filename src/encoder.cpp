@@ -35,6 +35,8 @@ namespace serialize {
             for (uint32_t idx = 0; idx < len; ++idx) {
                 *_target++ = ((const uint8_t*)data)[idx];
             }
+            /*memcpy(_target, data, len);
+            _target += len;*/
         }
     }
 
