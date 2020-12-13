@@ -1,4 +1,4 @@
-PROJECT(PBWrapper)
+PROJECT(protobuf)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 INCLUDE(CheckIncludeFileCXX)
 
@@ -18,9 +18,9 @@ SOURCE_GROUP(src FILES ${SRC})
 
 LIST(REMOVE_ITEM DIR_SRCS "./tester/main.cpp")
 IF (MSVC)
-    ADD_LIBRARY(PBWrapper SHARED ${SRC} ${DIR_SRCS}) 
+    ADD_LIBRARY(protobuf SHARED ${SRC} ${DIR_SRCS}) 
 ELSE ()
-    ADD_LIBRARY(PBWrapper ${SRC} ${DIR_SRCS}) 
+    ADD_LIBRARY(protobuf ${SRC} ${DIR_SRCS}) 
 ENDIF (MSVC)
 
 
@@ -31,7 +31,7 @@ IF (${EXEC} STREQUAL ON)
     SET(RW_DATA_PATH "${PROJECT_SOURCE_DIR}/tester/" CACHE PATH "root path")
     LINK_DIRECTORIES(${RW_DATA_PATH})
     ADD_EXECUTABLE(tester ${TESTER})
-    TARGET_LINK_LIBRARIES(tester PBWrapper)
+    TARGET_LINK_LIBRARIES(tester protobuf)
     IF (MSVC)
         TARGET_LINK_LIBRARIES(tester shlwapi)
         TARGET_LINK_LIBRARIES(tester debug "benchmarkd.lib" optimized "benchmark.lib")

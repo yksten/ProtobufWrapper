@@ -104,7 +104,7 @@ static void pb_decode(benchmark::State& st) {
 
     std::string buffer;
     serialize::PBEncoder encoder(buffer);
-    encoder << items;
+    bool b = encoder << items;
     while (st.KeepRunning()) {
         struExamples items2;
         serialize::PBDecoder decoder(buffer);
@@ -113,6 +113,7 @@ static void pb_decode(benchmark::State& st) {
 }
 BENCHMARK(pb_encode);
 BENCHMARK(pb_decode);
+
 #endif
 
 int main(int argc, char** argv) {
