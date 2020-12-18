@@ -16,23 +16,23 @@ enum EnumType {
 };
 
 struct struExample {
-    uint32_t _id;
-    std::string _str;
-    float _i;
-    double _num;
+    uint32_t id;
+    std::string str;
+    float f;
+    double db;
 
     uint64_t getByteSize() const {
         uint64_t total_size = 0;
-        if (_id) {
-            total_size += 1 + serialize::ByteSize(static_cast<uint64_t>(_id));
+        if (id) {
+            total_size += 1 + serialize::ByteSize(static_cast<uint64_t>(id));
         }
-        if (!_str.empty()) {
-            total_size += 1 + serialize::ByteSize(_str);
+        if (!str.empty()) {
+            total_size += 1 + serialize::ByteSize(str);
         }
-        if (_i) {
+        if (f) {
             total_size += 1 + 4;
         }
-        if (_num) {
+        if (db) {
             total_size += 1 + 8;
         }
         return total_size;
@@ -40,7 +40,7 @@ struct struExample {
 
     template<typename T>
     void serialize(T& t) {
-        t & SERIALIZATION(1, _id) & SERIALIZATION(2, _str) & SERIALIZATION(3, _i) & SERIALIZATION(4, _num);
+        t & SERIALIZATION(1, id) & SERIALIZATION(2, str) & SERIALIZATION(3, f) & SERIALIZATION(4, db);
     }
 };
 
@@ -59,7 +59,7 @@ struct struExamples {
         if (!m.empty()) {
             for (std::map<int, struExample>::const_iterator it = m.begin(); it != m.end(); ++it) {
                 uint64_t temp = 1 + serialize::ByteSize(static_cast<uint64_t>(it->first)) + 1 + serialize::ByteSize(it->second);
-                total_size += 1 + serialize::ByteSize(temp) + temp;
+                total_size += 1 + serialize::ByteSize(static_cast<uint64_t>(temp)) + temp;
             }
         }
         return total_size;
@@ -73,17 +73,17 @@ struct struExamples {
 
 void test() {
     struExample item;
-    item._id = ET2;
-    item._str = "example";
-    item._i = 9.7f;
-    item._num = 19.8f;
+    item.id = ET2;
+    item.str = "example";
+    item.f = 9.7f;
+    item.db = 19.8f;
     struExamples items;
     items.v.push_back(item);
     items.m[1] = item;
-    item._id = ET3;
-    item._str = "afexample";
-    item._i = 5.7f;
-    item._num = 89.8f;
+    item.id = ET3;
+    item.str = "afexample";
+    item.f = 5.7f;
+    item.db = 89.8f;
     items.v.push_back(item);
     items.m[2] = item;
 
@@ -101,17 +101,17 @@ void test() {
 #ifdef _MSC_VER
 static void pb_encode(benchmark::State& st) {
     struExample item;
-    item._id = ET2;
-    item._str = "example";
-    item._i = 9.7f;
-    item._num = 19.8f;
+    item.id = ET2;
+    item.str = "example";
+    item.f = 9.7f;
+    item.db = 19.8f;
     struExamples items;
     items.v.push_back(item);
     items.m[1] = item;
-    item._id = ET3;
-    item._str = "afexample";
-    item._i = 5.7f;
-    item._num = 89.8f;
+    item.id = ET3;
+    item.str = "afexample";
+    item.f = 5.7f;
+    item.db = 89.8f;
     items.v.push_back(item);
     items.m[2] = item;
 
@@ -125,17 +125,17 @@ static void pb_encode(benchmark::State& st) {
 
 static void pb_decode(benchmark::State& st) {
     struExample item;
-    item._id = ET2;
-    item._str = "example";
-    item._i = 9.7f;
-    item._num = 19.8f;
+    item.id = ET2;
+    item.str = "example";
+    item.f = 9.7f;
+    item.db = 19.8f;
     struExamples items;
     items.v.push_back(item);
     items.m[1] = item;
-    item._id = ET3;
-    item._str = "afexample";
-    item._i = 5.7f;
-    item._num = 89.8f;
+    item.id = ET3;
+    item.str = "afexample";
+    item.f = 5.7f;
+    item.db = 89.8f;
     items.v.push_back(item);
     items.m[2] = item;
 

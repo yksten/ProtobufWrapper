@@ -24,11 +24,14 @@
 
 namespace serialize {
 
+    const uint32_t BITNUM = 16;
+
     enum {
-        TYPE_VARINT = 0,     // int32,int64,uint32,uint64,bool,enum
-        TYPE_SVARINT = 1,    // sint32,sin64
-        TYPE_FIXED32 = 2,    // fixed32,sfixed32
-        TYPE_FIXED64 = 3,    // fixed64,sfixed64
+        TYPE_VARINT = 0,        // int32,int64,uint32,uint64,bool,enum
+        TYPE_SVARINT = 1,       // sint32,sin64
+        TYPE_FIXED32 = 2,       // fixed32,sfixed32
+        TYPE_FIXED64 = 3,       // fixed64,sfixed64
+        TYPE_PACKED = 1 << 16,  // packed
     };
 
     template<typename VALUE>
@@ -80,14 +83,9 @@ namespace serialize {
             typedef char one;
             typedef int  two;
 
-            template<typename To1>
-            static To1& create();
-
-            template<typename To1>
-            static one test(To1);
-
-            template<typename>
-            static two test(...);
+            template<typename To1> static To1& create();
+            template<typename To1> static one test(To1);
+            template<typename> static two test(...);
         public:
             static const bool value = (sizeof(test<To>(create<From>())) == sizeof(one));
         };
@@ -127,8 +125,8 @@ namespace serialize {
             serialize(t, c);
         }
 
-        template<typename T, bool isNum = is_integral<T>::value> struct ByteSizeTypeTraits { static inline const T& convertTo(const T& v) { return v; } };
-        template<typename T> struct ByteSizeTypeTraits<T, true> { static inline uint64_t convertTo(const T& v) { return static_cast<uint64_t>(v); } };
+        template<typename T, bool isNum = is_integral<T>::value> struct ByteSizeTypeTraits { typedef T Type; };
+        template<typename T> struct ByteSizeTypeTraits<T, true> { typedef uint64_t Type; };
         template<> struct ByteSizeTypeTraits<float, true> { };
         template<> struct ByteSizeTypeTraits<double, true> { };
 

@@ -125,6 +125,17 @@ namespace google {
                     return sz;
                 }
 
+                const char* getFieldType(const FieldDescriptor& field) {
+                    if (field.type() == FieldDescriptor::TYPE_FIXED64 || field.type() == FieldDescriptor::TYPE_SFIXED64) {
+                        return "serialize::TYPE_FIXED64";
+                    } else if (field.type() == FieldDescriptor::TYPE_SINT32 || field.type() == FieldDescriptor::TYPE_SINT64) {
+                        return "serialize::TYPE_SVARINT";
+                    } else if (field.type() == FieldDescriptor::TYPE_FIXED32 || field.type() == FieldDescriptor::TYPE_SFIXED32) {
+                        return "serialize::TYPE_FIXED32";
+                    }
+                    return NULL;
+                }
+
                 const char* type2tag(const FieldDescriptor& field, FileDescriptor::Syntax syntax) {
                     static std::string strResult;
                     strResult.clear();
@@ -141,12 +152,27 @@ namespace google {
                     case FieldDescriptor::TYPE_SFIXED32:
                         strResult.append(", serialize::TYPE_FIXED32");
                     default:
-                        strResult.append(", serialize::TYPE_VARINT");
+                        //strResult.append(", serialize::TYPE_VARINT");
                         break;
                     }
 
-                    if (field.is_packed())
-                        strResult.append("| (1 << 16)");
+                    if (field.is_packed()) {
+                        if (strResult.empty()) strResult.append(", serialize::TYPE_VARINT");
+                        strResult.append("| serialize::TYPE_PACKED");
+                    } else if (field.is_map()) {
+                        const FieldDescriptor* key = field.message_type()->field(0);
+                        if (const char* szKeyType = getFieldType(*key)) {
+                            strResult.append(szKeyType).append(" << serialize::BITNUM");
+                        }
+                        const FieldDescriptor* value = field.message_type()->field(1);
+                        if (const char* szValueType = getFieldType(*key)) {
+                            if (!strResult.empty()) {
+                                strResult.append(" | ");
+                            }
+                            strResult.append(szValueType);
+                        }
+
+                    }
 
                     if (syntax == FileDescriptor::SYNTAX_PROTO2) {
                         if (field.label() == FieldDescriptor::LABEL_OPTIONAL)
@@ -483,13 +509,13 @@ namespace google {
                         || fieldType == FieldDescriptor::TYPE_SFIXED64) {
                         strResult.append("8");
                     } else if (fieldType == FieldDescriptor::TYPE_SINT32) {
-                        strResult.append("serialize::SvarintByteSize(static_cast<uint32_t>(").append(fieldName);
+                        strResult.append("serialize::ByteSize(static_cast<uint32_t>(").append(fieldName);
                         if (isArrayItem) strResult.append("[i]");
-                        strResult.append(")");
+                        strResult.append(", serialize::TYPE_FIXED32)");
                     } else if (fieldType == FieldDescriptor::TYPE_SINT64) {
-                        strResult.append("serialize::SvarintByteSize(static_cast<uint64_t>(").append(fieldName);
+                        strResult.append("serialize::ByteSize(static_cast<uint64_t>(").append(fieldName);
                         if (isArrayItem) strResult.append("[i]");
-                        strResult.append(")");
+                        strResult.append(", serialize::TYPE_FIXED64)");
                     } else {
                         strResult.append("serialize::ByteSize(static_cast<uint64_t>(").append(fieldName).append(")");
                         if (isArrayItem) strResult.append("[i]");
