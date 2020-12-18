@@ -127,23 +127,14 @@ namespace serialize {
             serialize(t, c);
         }
 
-        template<typename T, bool isEnum = is_enum<T>::value>
-        struct TypeTraits {
-            typedef T Type;
-            static bool isVector() { return false; }
-        };
+        template<typename T, bool isNum = is_integral<T>::value> struct ByteSizeTypeTraits { static inline const T& convertTo(const T& v) { return v; } };
+        template<typename T> struct ByteSizeTypeTraits<T, true> { static inline uint64_t convertTo(const T& v) { return static_cast<uint64_t>(v); } };
+        template<> struct ByteSizeTypeTraits<float, true> { };
+        template<> struct ByteSizeTypeTraits<double, true> { };
 
-        template<typename T, bool isEnum>
-        struct TypeTraits<std::vector<T>, isEnum> {
-            typedef std::vector<T> Type;
-            static bool isVector() { return true; }
-        };
-
-        template<typename T>
-        struct TypeTraits<T, true> {
-            typedef int32_t Type;
-            static bool isVector() { return false; }
-        };
+        template<typename T, bool isEnum = is_enum<T>::value> struct TypeTraits { typedef T Type; };
+        template<typename T, bool isEnum> struct TypeTraits<std::vector<T>, isEnum> { typedef std::vector<T> Type; };
+        template<typename T> struct TypeTraits<T, true> { typedef int32_t Type; };
 
     }
 

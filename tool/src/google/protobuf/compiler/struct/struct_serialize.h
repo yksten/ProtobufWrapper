@@ -28,7 +28,8 @@ namespace google {
                     codeSerialize(const FileDescriptor* file, const Options& options);
                     ~codeSerialize();
 
-                    void print(google::protobuf::io::Printer& printer, const char* szName)const;
+                    void printHeader(google::protobuf::io::Printer& printer, const char* szName)const;
+                    void printSource(google::protobuf::io::Printer& printer, const char* szName)const;
                     static std::string FieldName(const FieldDescriptor& field);
                 private:
                     void prepareMsgs();
@@ -38,6 +39,8 @@ namespace google {
                     void printEnum(google::protobuf::io::Printer& printer)const;
                     void printStruct(google::protobuf::io::Printer& printer, FileDescriptor::Syntax syntax)const;
                     void printSerialize(google::protobuf::io::Printer& printer)const;
+                    void printByteSize(google::protobuf::io::Printer& printer, FileDescriptor::Syntax syntax)const;
+                    std::string printFileByteSize(const FieldDescriptor::Type fieldType, const char* fieldName, bool isArrayItem)const;
                     bool hasInt(google::protobuf::io::Printer& printer)const;
                     bool hasString(google::protobuf::io::Printer& printer)const;
                     bool hasVector(google::protobuf::io::Printer& printer)const;

@@ -5,19 +5,38 @@
 #include <map>
 #include "serialize.h"
 
-#define BEGINCALCULATEFIELD(buf) \
-    std::pair<bool, size_t> customField(buf.getCustomField());
-
-#define ENDCALCULATEFIELD(nByteSize, buf) \
-    nByteSize = buf.getCustomField().second; buf.setCustomField(customField);
 
 namespace serialize {
+
+    static inline uint8_t ByteSize(uint64_t value) {
+        uint8_t i = 0;;
+        while (value >= 0x80) {
+            ++i; value >>= 7;
+        }
+        return ++i;
+    }
+    
+    static inline uint64_t ByteSize(const std::string& value) {
+        return ByteSize(static_cast<uint64_t>(value.length())) + value.length();
+    }
+
+    template <typename T>
+    static inline uint64_t ByteSize(const T& value) {
+        uint64_t customLength = value.getByteSize();
+        return ByteSize(customLength) + customLength;
+    }
+
+    static inline uint64_t SvarintByteSize(uint32_t value) {
+        return ByteSize(static_cast<uint64_t>(((value << 1) ^ static_cast<uint32_t>(value >> 31))));
+    }
+
+    static inline uint64_t SvarintByteSize(uint64_t value) {
+        ByteSize((value << 1) ^ static_cast<uint64_t>(value >> 63));
+    }
 
     class EXPORTAPI BufferWrapper {
         std::string* _buffer;
         uint8_t* _target;
-        mutable bool _bCalculateFlag;
-        mutable uint32_t _cumtomFieldSize;
 
         BufferWrapper(const BufferWrapper&);
         BufferWrapper& operator=(const BufferWrapper&);
@@ -29,12 +48,6 @@ namespace serialize {
         uint8_t*& target();
         void reserve(uint32_t nSize);
         void appendBytes(const void* data, size_t len);
-        void appendLength(uint32_t nLength);
-
-        bool isGetLength() const;
-
-        std::pair<bool, uint32_t> getCustomField() const;
-        void setCustomField(const std::pair<bool, uint32_t>& pair);
     };
 
     class EXPORTAPI PBEncoder {
@@ -102,19 +115,6 @@ namespace serialize {
                 _functionSet.push_back(converter(convert_t(f), tag, offset, value.bHas));
             }
 
-            uint32_t getByteSize(const void* pStruct, BufferWrapper& buf) {
-                uint32_t nByteSize = 0;
-                do {
-                    BEGINCALCULATEFIELD(buf);
-                    uint32_t nSize = _functionSet.size();
-                    for (uint32_t idx = 0; idx < nSize; ++idx) {
-                        (_functionSet[idx])(pStruct, buf);
-                    }
-                    ENDCALCULATEFIELD(nByteSize, buf);
-                } while (0);
-                return nByteSize;
-            }
-
             void doConvert(const void* pStruct, BufferWrapper& buf) {
                 uint32_t nSize = _functionSet.size();
                 for (uint32_t idx = 0; idx < nSize; ++idx) {
@@ -150,7 +150,7 @@ namespace serialize {
         template<typename T>
         bool operator<<(const T& value) {
             convertMgr& mgr = getMessage(*const_cast<T*>(&value));
-            uint32_t nByteSize = mgr.getByteSize((const uint8_t*)&value, _buffer);
+            uint64_t nByteSize = value.getByteSize();
             _buffer.reserve(nByteSize);
             mgr.doConvert((const uint8_t*)&value, _buffer);
             if (_buffer.size() != nByteSize) {
@@ -204,6 +204,7 @@ namespace serialize {
         void encodeField(const serializeItem<std::string>& value);
 
         static void varInt(uint64_t value, BufferWrapper& buf);
+        static void svarInt(uint32_t value, BufferWrapper& buf);
         static void svarInt(uint64_t value, BufferWrapper& buf);
         static void fixed32(uint32_t value, BufferWrapper& buf);
         static void fixed64(uint64_t value, BufferWrapper& buf);
@@ -242,13 +243,9 @@ namespace serialize {
         static void encodeValue(const T& v, const enclosure_t& info, BufferWrapper& buf) {
             buf.appendBytes(info.sz, info.size);
             convertMgr& mgr = getMessage(*const_cast<T*>(&v));
-            uint32_t nByteSize = mgr.getByteSize((const uint8_t*)&v, buf);
+            uint64_t nByteSize = v.getByteSize();
             varInt(nByteSize, buf);
-            if (buf.isGetLength()) {
-                buf.appendLength(nByteSize);
-            } else {
-                mgr.doConvert((const uint8_t*)&v, buf);
-            }
+            mgr.doConvert((const uint8_t*)&v, buf);
         }
 
         template<typename T>
@@ -278,20 +275,12 @@ namespace serialize {
                 buf.appendBytes(info.sz, info.size);
                 static enclosure_t infok = encodeVarint(((uint64_t)1 << 3) | internal::isMessage<K>::WRITE_TYPE, NULL);
                 static enclosure_t infov = encodeVarint(((uint64_t)2 << 3) | internal::isMessage<V>::WRITE_TYPE, NULL);
-                uint32_t nByteSize = 0;
-                do {
-                    BEGINCALCULATEFIELD(buf);
-                    encodeValue(*(const typename internal::TypeTraits<K>::Type*)(&it->first), infok, buf);
-                    encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), infov, buf);
-                    ENDCALCULATEFIELD(nByteSize, buf);
-                } while (0);
+                uint64_t nByteSize = 0;
+                nByteSize += infok.size + serialize::ByteSize(typename internal::ByteSizeTypeTraits<K>::convertTo(it->first));
+                nByteSize += infov.size + serialize::ByteSize(typename internal::ByteSizeTypeTraits<V>::convertTo(it->second));
                 varInt(nByteSize, buf);
-                if (buf.isGetLength()) {
-                    buf.appendLength(nByteSize);
-                } else {
-                    encodeValue(*(const typename internal::TypeTraits<K>::Type*)(&it->first), infok, buf);
-                    encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), infov, buf);
-                }
+                encodeValue(*(const typename internal::TypeTraits<K>::Type*)(&it->first), infok, buf);
+                encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), infov, buf);
             }
         }
 

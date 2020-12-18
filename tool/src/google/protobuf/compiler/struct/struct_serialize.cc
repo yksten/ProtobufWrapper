@@ -3,6 +3,7 @@
 #include <google/protobuf/compiler/cpp/cpp_message.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
+#include <google/protobuf/wire_format.h>
 
 namespace google {
     namespace protobuf {
@@ -231,7 +232,7 @@ namespace google {
                     return idx;
                 }
 
-                void codeSerialize::print(google::protobuf::io::Printer& printer, const char* szName)const {
+                void codeSerialize::printHeader(google::protobuf::io::Printer& printer, const char* szName)const {
                     std::string strStructName(szName);
                     std::transform(strStructName.begin(), strStructName.end(), strStructName.begin(), ::toupper);
                     //1.program once
@@ -252,6 +253,16 @@ namespace google {
                     //4.serialize functions
                     //printSerialize(printer);
                     printer.Print("\n#endif\n");
+                }
+
+                void codeSerialize::printSource(google::protobuf::io::Printer& printer, const char* szName)const {
+                    printer.Print("#include \"$basename$.pb.h\"\n\n\n", "basename", szName);
+                    // namespace function
+                    do {
+                        std::vector<string> package_parts = Split(_file->package(), ".", true);
+                        packagePartsWrapper ins(package_parts, printer);
+                        printByteSize(printer, _file->syntax());
+                    } while (false);
                 }
 
                 void codeSerialize::printInclude(google::protobuf::io::Printer& printer)const {
@@ -352,6 +363,8 @@ namespace google {
 
                         printer.Print(" {}\n$fields$", "fields", fields);
 
+                        printer.Print("\n        uint32_t getByteSize() const;\n");
+
                         printer.Print("\n        template <typename T>\n        void serialize(T& t) {\n            t", "nameSpace", _file->package(), "struName", messages._name);
                         for (uint32_t idx = 0; idx < message_size; ++idx) {
                             if (const FieldDescriptor* field = messages._vec.at(idx)) {
@@ -387,6 +400,102 @@ namespace google {
                         }
                         printer.Print(";\n}\n");
                     }
+                }
+
+                void codeSerialize::printByteSize(google::protobuf::io::Printer& printer, FileDescriptor::Syntax syntax)const {
+                    uint32_t size = _message_generators.size();
+                    for (uint32_t i = 0; i < size; ++i) {
+                        const FieldDescriptorArr& messages = _message_generators.at(i);
+                        if (messages._vec.empty() || messages._name.find("Entry_DoNotUse") != std::string::npos)
+                            continue;
+                        printer.Print("\n");
+                        printer.Print("    uint64_t $struName$::getByteSize() const {\n        uint64_t total_size = 0;\n", "struName", messages._name);
+                        std::string fields;
+                        uint32_t message_size = messages._vec.size();
+                        for (uint32_t idx = 0, flag = 0; idx < message_size; ++idx) {
+                            if (const FieldDescriptor* field = messages._vec.at(idx)) {
+                                char szTagSize[20] = { 0 };
+                                sprintf(szTagSize, "%d", google::protobuf::internal::WireFormat::TagSize(field->number(), field->type()));
+                                //has
+                                if (syntax == FileDescriptor::SYNTAX_PROTO2) {
+                                    if (field->label() == FieldDescriptor::LABEL_OPTIONAL) {
+                                        printer.Print("    if (has_$fieldName$) {\n", "fieldName", FieldName(*field));
+                                        printer.Print("            total_size += $tagSize$ + $fildSize$;\n", "tagSize", szTagSize, "fildSize", printFileByteSize(field->type(), FieldName(*field).c_str(), false));
+                                        printer.Print("    }\n");
+                                    }
+                                } else {
+                                    if (field->is_map()) {
+                                        const FieldDescriptor* key = field->message_type()->field(0);
+                                        const FieldDescriptor* value = field->message_type()->field(1);
+                                        printer.Print("        if (!$fieldName$.empty()) {\n"
+                                            "            for (std::map<int, struExample>::const_iterator it = $fieldName$.begin(); it != $fieldName$.end(); ++it) {\n"
+                                            "                uint64_t temp = 1 + $fildSizeKey$ + 1 + $fildSizeValue$;\n"
+                                            "                total_size += $tagSize$ + $entryDoNotUse$ + temp;\n"
+                                            "            }\n"
+                                            "        }\n"
+                                            , "tagSize", szTagSize, "fieldName", FieldName(*field)
+                                            , "entryDoNotUse", printFileByteSize(FieldDescriptor::TYPE_UINT64, "temp", false)
+                                            , "fildSizeKey", printFileByteSize(key->type(), "it->first", false)
+                                            , "fildSizeValue", printFileByteSize(value->type(), "it->second", false));
+                                    } else if (field->is_repeated()) {
+                                        printer.Print("        if (!$fieldName$.empty()) {\n"
+                                            "            uint32_t size = (uint32_t)$fieldName$.size();\n"
+                                            "            for (uint32_t i = 0; i < size; ++i) {\n"
+                                            "                total_size += 1 + $fildSize$;\n"
+                                            "            }\n"
+                                            "        }\n", "fieldName", FieldName(*field), "fildSize", printFileByteSize(field->type(), FieldName(*field).c_str(), true));
+                                    } else {
+                                        if (field->type() == FieldDescriptor::TYPE_MESSAGE) {
+                                            printer.Print("        total_size += $tagSize$ + $fildSize$;\n", "tagSize", szTagSize, "fildSize", printFileByteSize(field->type(), FieldName(*field).c_str(), false));
+                                        } else if (field->type() == FieldDescriptor::TYPE_STRING
+                                            || field->type() == FieldDescriptor::TYPE_BYTES) {
+                                            printer.Print("        if (!$fieldName$.empty()) {\n", "fieldName", FieldName(*field));
+                                            printer.Print("            total_size += $tagSize$ + $fildSize$;\n", "tagSize", szTagSize, "fildSize", printFileByteSize(field->type(), FieldName(*field).c_str(), false));
+                                            printer.Print("        }\n");
+                                        } else {
+                                            printer.Print("        if ($fieldName$) {\n", "fieldName", FieldName(*field));
+                                            printer.Print("            total_size += $tagSize$ + $fildSize$;\n", "tagSize", szTagSize, "fildSize", printFileByteSize(field->type(), FieldName(*field).c_str(), false));
+                                            printer.Print("        }\n");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        printer.Print("        return total_size;\n");
+                        printer.Print("    }\n");
+                    }
+                }
+
+                std::string codeSerialize::printFileByteSize(const FieldDescriptor::Type fieldType, const char* fieldName, bool isArrayItem)const {
+                    std::string strResult;
+                    if (fieldType == FieldDescriptor::TYPE_MESSAGE
+                        || fieldType == FieldDescriptor::TYPE_STRING
+                        || fieldType == FieldDescriptor::TYPE_BYTES) {
+                        strResult.append("serialize::ByteSize(").append(fieldName);
+                        if (isArrayItem) strResult.append("[i]");
+                        strResult.append(")");
+                    } else if (fieldType == FieldDescriptor::TYPE_FLOAT
+                        || fieldType == FieldDescriptor::TYPE_FIXED32
+                        || fieldType == FieldDescriptor::TYPE_SFIXED32) {
+                        strResult.append("4");
+                    } else if (fieldType == FieldDescriptor::TYPE_DOUBLE
+                        || fieldType == FieldDescriptor::TYPE_FIXED64
+                        || fieldType == FieldDescriptor::TYPE_SFIXED64) {
+                        strResult.append("8");
+                    } else if (fieldType == FieldDescriptor::TYPE_SINT32) {
+                        strResult.append("serialize::SvarintByteSize(static_cast<uint32_t>(").append(fieldName);
+                        if (isArrayItem) strResult.append("[i]");
+                        strResult.append(")");
+                    } else if (fieldType == FieldDescriptor::TYPE_SINT64) {
+                        strResult.append("serialize::SvarintByteSize(static_cast<uint64_t>(").append(fieldName);
+                        if (isArrayItem) strResult.append("[i]");
+                        strResult.append(")");
+                    } else {
+                        strResult.append("serialize::ByteSize(static_cast<uint64_t>(").append(fieldName).append(")");
+                        if (isArrayItem) strResult.append("[i]");
+                        strResult.append(")");
+                    }
+                    return strResult;
                 }
 
                 bool codeSerialize::hasInt(google::protobuf::io::Printer& printer)const {
