@@ -122,7 +122,13 @@ namespace serialize {
 
             template<typename T>
             void bindArray(void(*f)(const std::vector<T>&, const enclosure_t&, BufferWrapper&), const serializeItem<std::vector<T> >& value) {
-                uint64_t tag = ((uint64_t)value.num << 3) | internal::WT_LENGTH_DELIMITED;
+                uint64_t type = internal::isMessage<T>::WRITE_TYPE;
+                if (value.type & 0xFFFF == TYPE_FIXED32) {
+                    type = internal::WT_32BIT;
+                } else if (value.type & 0xFFFF == TYPE_FIXED64) {
+                    type = internal::WT_64BIT;
+                }
+                uint64_t tag = ((uint64_t)value.num << 3) | type;
                 offset_type offset = ((const uint8_t*)(&value.value)) - _struct;
                 _functionSet.push_back(converter(convert_t(f), tag, value.type, offset, value.bHas));
             }
@@ -317,9 +323,9 @@ namespace serialize {
                     convsetSet[keyType](&it->first, infok, buf);
                 }
                 if (valueType == TYPE_VARINT) {
-                    encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), infok, buf);
+                    encodeValue(*(const typename internal::TypeTraits<V>::Type*)(&it->second), infov, buf);
                 } else if (valueType == TYPE_SVARINT || valueType == TYPE_FIXED32 || valueType == TYPE_FIXED64) {
-                    convsetSet[valueType](&it->second, infok, buf);
+                    convsetSet[valueType](&it->second, infov, buf);
                 }
             }
         }
