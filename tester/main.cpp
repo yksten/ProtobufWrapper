@@ -17,9 +17,13 @@ enum EnumType {
 
 struct struExample {
     uint32_t id;
+    bool has_id;
     std::string str;
+    bool has_str;
     float f;
+    bool has_f;
     double db;
+    bool has_db;
 
     uint64_t getByteSize() const {
         uint64_t total_size = 0;
@@ -40,7 +44,7 @@ struct struExample {
 
     template<typename T>
     void serialize(T& t) {
-        t & SERIALIZATION(1, id) & SERIALIZATION(2, str) & SERIALIZATION(3, f) & SERIALIZATION(4, db);
+        t & SERIALIZATION(1, id, &has_id) & SERIALIZATION(2, str, &has_str) & SERIALIZATION(3, f, &has_f) & SERIALIZATION(4, db, &has_db);
     }
 };
 
