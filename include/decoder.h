@@ -46,14 +46,10 @@ namespace proto {
 
     public:
         explicit Message(const void* pStruct = NULL);
-
         Message(const Message&);
-
         bool empty() const { return _functionSet.empty(); }
         void offset(uint32_t field_number, offset_type n);
-
         void call(uint32_t field_number, void* pStruct, const void* cValue) const;
-
         static bool ReadVarInt(const uint8_t*& current, size_t& remaining, uint64_t& result);
         bool ParseFromBytes(const uint8_t* sz, uint32_t size, void* pStruct);
 
