@@ -41,20 +41,21 @@ namespace proto {
             void offset(offset_type offset) { _offset = offset; }
         };
 
-        uint8_t* _struct;
+        const uint8_t* _struct;
         std::map<uint32_t, converter> _functionSet;
 
     public:
-        Message();
+        explicit Message(const void* pStruct = NULL);
+
+        Message(const Message&);
 
         bool empty() const { return _functionSet.empty(); }
         void offset(uint32_t field_number, offset_type n);
 
-        void setStruct(void* pStruct);
-        void call(uint32_t field_number, const void* cValue) const;
+        void call(uint32_t field_number, void* pStruct, const void* cValue) const;
 
         static bool ReadVarInt(const uint8_t*& current, size_t& remaining, uint64_t& result);
-        bool ParseFromBytes(const uint8_t* sz, uint32_t size);
+        bool ParseFromBytes(const uint8_t* sz, uint32_t size, void* pStruct);
 
         template<typename P, typename T>
         bool bind(bool(*f)(T&, const P&, const uint32_t, bool*), serialize::serializeItem<T>& value) {
@@ -98,9 +99,8 @@ namespace serialize {
 
         template<typename T>
         proto::Message getMessage(T& value) {
-            proto::Message msg;
+            proto::Message msg(&value);
             _msg = &msg;
-            msg.setStruct(&value);
             internal::serializeWrapper(*this, value);
             return msg;
         }
@@ -108,11 +108,10 @@ namespace serialize {
         template<typename T>
         bool operator>>(T& value) {
             static proto::Message msg = getMessage(value);
-            msg.setStruct(&value);
             _bParseResult = false;
             internal::serializeWrapper(*this, value);
             _bParseResult = true;
-            return msg.ParseFromBytes(_sz, _size);
+            return msg.ParseFromBytes(_sz, _size, &value);
         }
 
         template<typename T>
@@ -266,7 +265,7 @@ namespace serialize {
                 msg.offset(1, (proto::offset_type)((uint8_t*)&key - NULL));
                 msg.offset(2, (proto::offset_type)((uint8_t*)&v - NULL));
             }
-            if (!msg.ParseFromBytes(decoder._sz, decoder._size))
+            if (!msg.ParseFromBytes(decoder._sz, decoder._size, NULL))
                 return false;
             value.insert(std::pair<K, V>(key, v));
             if (pHas) *pHas = true;
