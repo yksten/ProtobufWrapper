@@ -105,9 +105,9 @@ namespace serialize {
             template<typename T>
             void bindValue(void(*f)(const T&, const bool*, const enclosure_t&, BufferWrapper&), const serializeItem<T>& value) {
                 uint64_t type = internal::isMessage<T>::WRITE_TYPE;
-                if (value.type & 0xFFFF == TYPE_FIXED32) {
+                if ((value.type & 0xFFFF) == TYPE_FIXED32) {
                     type = internal::WT_32BIT;
-                } else if (value.type & 0xFFFF == TYPE_FIXED64) {
+                } else if ((value.type & 0xFFFF) == TYPE_FIXED64) {
                     type = internal::WT_64BIT;
                 }
                 uint64_t tag = ((uint64_t)value.num << 3) | type;
@@ -127,9 +127,9 @@ namespace serialize {
             template<typename T>
             void bindArray(void(*f)(const std::vector<T>&, const bool*, const enclosure_t&, BufferWrapper&), const serializeItem<std::vector<T> >& value) {
                 uint64_t type = internal::isMessage<T>::WRITE_TYPE;
-                if (value.type & 0xFFFF == TYPE_FIXED32) {
+                if ((value.type & 0xFFFF) == TYPE_FIXED32) {
                     type = internal::WT_32BIT;
-                } else if (value.type & 0xFFFF == TYPE_FIXED64) {
+                } else if ((value.type & 0xFFFF) == TYPE_FIXED64) {
                     type = internal::WT_64BIT;
                 }
                 uint64_t tag = ((uint64_t)value.num << 3) | type;
@@ -171,14 +171,14 @@ namespace serialize {
         static encodeFunction64 convsetSet64[4];
         static encodeFunction64 convsetSetPack64[4];
     public:
-        explicit PBEncoder(std::string& str);
+        explicit PBEncoder(std::string* pStr);
         ~PBEncoder();
 
         template<typename T>
         static PBEncoder::convertMgr getMessage(T& value) {
             convertMgr mgr(&value);
             if (mgr.empty()) {
-                PBEncoder encoder(*(std::string*)(NULL));
+                PBEncoder encoder(NULL);
                 encoder._mgr = &mgr;
                 internal::serializeWrapper(encoder, value);
             }
@@ -280,7 +280,7 @@ namespace serialize {
         template<typename T>
         static void encodeValue(const T& v, const bool* pHas, const enclosure_t& info, BufferWrapper& buf) {
             buf.appendBytes(info.sz, info.size);
-            convertMgr& mgr = getMessage(*const_cast<T*>(&v));
+            convertMgr mgr = getMessage(*const_cast<T*>(&v));
             uint64_t nByteSize = v.getByteSize();
             varInt(nByteSize, buf);
             mgr.doConvert((const uint8_t*)&v, buf);

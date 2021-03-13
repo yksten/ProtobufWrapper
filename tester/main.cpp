@@ -92,7 +92,7 @@ void test() {
     items.m[2] = item;
 
     std::string buffer;
-    serialize::PBEncoder encoder(buffer);
+    serialize::PBEncoder encoder(&buffer);
     encoder << items;
 
     struExamples items2;
@@ -121,7 +121,7 @@ static void pb_encode(benchmark::State& st) {
 
     while (st.KeepRunning()) {
         std::string buffer;
-        serialize::PBEncoder encoder(buffer);
+        serialize::PBEncoder encoder(&buffer);
         bool b = encoder << items;
         assert(b);
     }
@@ -144,7 +144,7 @@ static void pb_decode(benchmark::State& st) {
     items.m[2] = item;
 
     std::string buffer;
-    serialize::PBEncoder encoder(buffer);
+    serialize::PBEncoder encoder(&buffer);
     bool b = encoder << items;
     assert(b);
     while (st.KeepRunning()) {

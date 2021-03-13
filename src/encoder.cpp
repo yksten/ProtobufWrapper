@@ -42,7 +42,7 @@ namespace serialize {
     PBEncoder::encodeFunction64 PBEncoder::convsetSet64[] = { &PBEncoder::encodeValueVarintArray, &PBEncoder::encodeValueSvarintArray, NULL, &PBEncoder::encodeValueFixed64Array };
     PBEncoder::encodeFunction64 PBEncoder::convsetSetPack64[] = { &PBEncoder::encodeValueVarintPack, &PBEncoder::encodeValueSvarintPack, NULL, &PBEncoder::encodeValueFixed64Pack };
 
-    PBEncoder::PBEncoder(std::string& str) :_buffer(&str), _mgr(NULL) {
+    PBEncoder::PBEncoder(std::string* pStr) :_buffer(pStr), _mgr(NULL) {
     }
 
     PBEncoder::~PBEncoder() {
