@@ -65,7 +65,6 @@ namespace serialize {
     };
 
     class EXPORTAPI PBEncoder {
-
         struct enclosure_t {
             enclosure_t(uint32_t t, uint32_t n) : type(t), size(n) { memset(sz, 0, 10); }
             uint32_t type;
@@ -175,19 +174,11 @@ namespace serialize {
         ~PBEncoder();
 
         template<typename T>
-        static PBEncoder::convertMgr getMessage(T& value) {
-            convertMgr mgr(&value);
-            if (mgr.empty()) {
-                PBEncoder encoder(NULL);
-                encoder._mgr = &mgr;
-                internal::serializeWrapper(encoder, value);
-            }
-            return mgr;
-        }
-
-        template<typename T>
         bool operator<<(const T& value) {
-            static convertMgr mgr = getMessage(*const_cast<T*>(&value));
+            convertMgr mgr(&value);
+            _mgr = &mgr;
+            internal::serializeWrapper(*this, *const_cast<T*>(&value));
+
             uint64_t nByteSize = value.getByteSize();
             _buffer.reserve(nByteSize);
             mgr.doConvert((const uint8_t*)&value, _buffer);
@@ -280,7 +271,10 @@ namespace serialize {
         template<typename T>
         static void encodeValue(const T& v, const bool* pHas, const enclosure_t& info, BufferWrapper& buf) {
             buf.appendBytes(info.sz, info.size);
-            convertMgr mgr = getMessage(*const_cast<T*>(&v));
+            convertMgr mgr(const_cast<T*>(&v));
+            PBEncoder encoder(NULL);
+            encoder._mgr = &mgr;
+            internal::serializeWrapper(encoder, *const_cast<T*>(&v));
             uint64_t nByteSize = v.getByteSize();
             varInt(nByteSize, buf);
             mgr.doConvert((const uint8_t*)&v, buf);
